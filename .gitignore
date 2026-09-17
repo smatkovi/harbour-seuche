@@ -1,0 +1,6 @@
+build/
+out/
+*.o
+*.rpm
+test_model
+test_rules
