@@ -1,5 +1,5 @@
 Name: harbour-seuche
-Version: 0.2.0
+Version: 0.3.0
 Release: 1
 Summary: Kooperatives Seuchen-Brettspiel
 License: GPL-3.0-or-later
@@ -72,6 +72,15 @@ install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
 /usr/share/licenses/%{name}
 
 %changelog
+* Fri Sep 18 2026 smatkovi - 0.3.0-1
+- Rollen sind frei wählbar, bis der erste Zug geschehen ist; jede Rolle nur
+  einmal, auch über mehrere Geräte — eine vergebene steht nicht mehr zur Wahl
+- Übersichtlichere Karte: farbige Flächen je Seuchengebiet, hellere Linien,
+  die drei Verbindungen über den Pazifik laufen als Stummel über den Rand
+  statt quer durch das Bild
+- Zoomen mit zwei Fingern oder Knöpfen, Sprung zur Figur am Zug, Städtenamen
+  erst ab genügend Vergrößerung, größere Antippflächen
+
 * Fri Sep 18 2026 smatkovi - 0.2.0-1
 - Netzwerkspiel im WLAN: ein Gerät eröffnet, zwei bis vier spielen zusammen
 - Tische werden per UDP gefunden, Adresse geht auch von Hand

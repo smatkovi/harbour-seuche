@@ -117,6 +117,66 @@ QString SeucheEngine::seatName(int seat) const
     return QString::fromUtf8(roleName(game_.players[seat].role));
 }
 
+QVariantList SeucheEngine::freeRoles(int seat) const
+{
+    QVariantList list;
+    if (!running_)
+        return list;
+
+    for (int role = 0; role < kBaseRoles; ++role) {
+        int heldBy = -1;
+        for (int other = 0; other < int(game_.players.size()); ++other) {
+            if (int(game_.players[other].role) == role)
+                heldBy = other;
+        }
+        if (heldBy >= 0 && heldBy != seat)
+            continue;                       // taken by someone else: not on offer
+
+        QVariantMap entry;
+        entry[QStringLiteral("roleId")] = role;
+        entry[QStringLiteral("name")] = QString::fromUtf8(roleName(Role(role)));
+        entry[QStringLiteral("ability")] = QString::fromUtf8(roleAbility(Role(role)));
+        entry[QStringLiteral("current")] = heldBy == seat;
+        list.append(entry);
+    }
+    return list;
+}
+
+bool SeucheEngine::chooseRole(int seat, int role)
+{
+    if (!ownsSeat(seat))
+        return false;
+    if (isGuest()) {
+        QVariantMap message;
+        message[QStringLiteral("t")] = QStringLiteral("role");
+        message[QStringLiteral("seat")] = seat;
+        message[QStringLiteral("role")] = role;
+        session_.send(message);      // the host checks and answers with the state
+        return true;
+    }
+    return applyRole(seat, role);
+}
+
+// The one place that decides whether a role change is allowed: not after the
+// game has started, and never a role a different seat already holds.
+bool SeucheEngine::applyRole(int seat, int role)
+{
+    if (!running_ || rolesLocked_)
+        return false;
+    if (seat < 0 || seat >= int(game_.players.size()) || role < 0 || role >= kBaseRoles)
+        return false;
+    for (int other = 0; other < int(game_.players.size()); ++other) {
+        if (other != seat && int(game_.players[other].role) == role)
+            return false;
+    }
+
+    game_.players[seat].role = Role(role);
+    note(tr("Sitz %1 spielt %2").arg(seat + 1).arg(QString::fromUtf8(roleName(Role(role)))));
+    refresh();
+    sendState();
+    return true;
+}
+
 QString SeucheEngine::cityName(int cityId) const
 {
     const City city{std::uint8_t(cityId)};
@@ -268,6 +328,7 @@ void SeucheEngine::newGame(int seats, int difficulty)
     game_ = seuche::newGame(options, rng_);
     running_ = true;
     journal_.clear();
+    rolesLocked_ = false;
     note(tr("Neue Partie: %1 Personen").arg(options.players));
     if (isHost()) {
         seatOwner_.assign(options.players, -1);
@@ -394,6 +455,7 @@ bool SeucheEngine::run(int index)
 
 bool SeucheEngine::applyAction(const Action &action)
 {
+    rolesLocked_ = true;
     const QString text = label(action);
     const int outbreaksBefore = game_.outbreaks;
 
@@ -426,6 +488,7 @@ void SeucheEngine::drawCard()
 
 void SeucheEngine::applyDraw()
 {
+    rolesLocked_ = true;
 
     const int before = int(game_.playerDeck.size());
     const PlayerCard top = before > 0 ? game_.playerDeck.back() : PlayerCard();
@@ -466,6 +529,7 @@ void SeucheEngine::infectCity()
 
 void SeucheEngine::applyInfect()
 {
+    rolesLocked_ = true;
 
     const City next = game_.infectionDeck.empty() ? City() : game_.infectionDeck.back();
     const int outbreaksBefore = game_.outbreaks;
@@ -766,6 +830,7 @@ void SeucheEngine::sendState()
     message[QStringLiteral("g")] = wire::toSnapshot(game_);
     message[QStringLiteral("journal")] = QStringList(journal_.mid(qMax(0, journal_.size() - 40)));
     message[QStringLiteral("owners")] = owners;
+    message[QStringLiteral("locked")] = rolesLocked_;
     session_.send(message);
 }
 
@@ -818,6 +883,7 @@ void SeucheEngine::handleMessage(int peer, const QVariantMap &message)
             if (!wire::fromSnapshot(message.value(QStringLiteral("g")).toMap(), game_))
                 return;
             running_ = true;
+            rolesLocked_ = message.value(QStringLiteral("locked")).toBool();
             journal_ = message.value(QStringLiteral("journal")).toStringList();
             const QVariantList owners = message.value(QStringLiteral("owners")).toList();
             seatOwner_.clear();
@@ -857,6 +923,11 @@ void SeucheEngine::handleMessage(int peer, const QVariantMap &message)
         if (ownerOfSeat(game_.discardingPlayer) != peer)
             return;
         applyDiscardCard(game_.discardingPlayer, message.value(QStringLiteral("card")).toInt());
+    } else if (type == QLatin1String("role")) {
+        const int seat = message.value(QStringLiteral("seat")).toInt();
+        if (ownerOfSeat(seat) != peer)
+            return;
+        applyRole(seat, message.value(QStringLiteral("role")).toInt());
     } else if (type == QLatin1String("event")) {
         const EventPlay play = wire::eventFromVariant(message.value(QStringLiteral("e")).toMap());
         if (ownerOfSeat(play.seat) != peer)

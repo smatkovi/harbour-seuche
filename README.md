@@ -10,7 +10,7 @@ Grafik, Rollen- und Ereignisbezeichnungen sowie alle Texte sind eigenständig.
 |---|---|
 | Regelwerk, Spielplan, Datenmodell | `spec/` — fertig |
 | Regelkern (`src/core`) | Aufbau, Aktionen, Ziehen, Epidemie, Infektion, Ausbrüche, Sieg/Niederlage — fertig und getestet |
-| App (Silica/QML) | spielbar: Spielplan, Aktionen je Stadt, Handkarten, Ereigniskarten, Protokoll |
+| App (Silica/QML) | spielbar: Spielplan mit Zoom, Aktionen je Stadt, Rollenwahl, Handkarten, Ereigniskarten, Protokoll |
 | LAN (`spec/netz.md`) | 2–4 Geräte im WLAN: Gastgeber hält die Partie, Gäste spiegeln sie |
 | Erweiterungsmodule | vorgesehen, nicht implementiert (`spec/regeln.md`, §10) |
 

@@ -63,6 +63,8 @@ class SeucheEngine : public QObject
     Q_PROPERTY(int peerCount READ peerCount NOTIFY netChanged)
     Q_PROPERTY(QVariantList mySeats READ mySeats NOTIFY netChanged)
     Q_PROPERTY(bool mayAct READ mayAct NOTIFY changed)
+    // Roles stay changeable until the first thing happens in the game.
+    Q_PROPERTY(bool rolesLocked READ rolesLocked NOTIFY changed)
     Q_PROPERTY(LanBrowser *browser READ browser CONSTANT)
 
 public:
@@ -114,6 +116,12 @@ public:
     Q_INVOKABLE QVariantList forecastCards() const;
     Q_INVOKABLE bool playForecast(int seat, const QVariantList &order);
 
+    // The roles still free, plus the one this seat holds — what the role page
+    // offers. A role another seat has taken never shows up, on any device.
+    Q_INVOKABLE QVariantList freeRoles(int seat) const;
+    Q_INVOKABLE bool chooseRole(int seat, int role);
+    bool rolesLocked() const { return rolesLocked_; }
+
     Q_INVOKABLE QString cityName(int cityId) const;
     Q_INVOKABLE QString cardLabel(int cardId) const;
 
@@ -151,6 +159,7 @@ private:
     void applyInfect();
     bool applyDiscardCard(int seat, int cardId);
     bool applyEventPlay(const seuche::EventPlay &play);
+    bool applyRole(int seat, int role);   // no ownership check: the host's own path
     bool ownsSeat(int seat) const;
 
     // --- network helpers ---
@@ -169,6 +178,7 @@ private:
     std::mt19937 rng_;
     QStringList journal_;
     bool running_ = false;
+    bool rolesLocked_ = false;
 
     LanSession session_;
     LanBrowser browser_;

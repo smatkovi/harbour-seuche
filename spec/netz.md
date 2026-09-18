@@ -57,6 +57,7 @@ Gäste → Gastgeber:
 | `step` | `s` = `draw` oder `infect` |
 | `discard` | `card` = abgeworfene Karte |
 | `event` | `e` = Ereigniskarte samt Zielangaben |
+| `role` | `seat`, `role` — Rollenwahl für den eigenen Sitz |
 
 Nach **jeder** Änderung schickt der Gastgeber einen vollständigen `state`. Das
 sind ein paar Kilobyte und macht Teilaktualisierungen und deren Fehlerquellen
@@ -71,6 +72,15 @@ sein Sitz an den Gastgeber zurück.
 
 Ein Gerät darf nur den Sitz bewegen, der ihm gehört; `mayAct` in der Oberfläche
 schaltet Karte, Knöpfe und Aktionsliste entsprechend frei.
+
+## Rollen
+
+Beim Aufbau werden die Rollen zufällig verteilt, bis zum ersten Zug darf aber
+jedes Gerät die Rolle **seines** Sitzes frei ändern. Angeboten werden nur Rollen,
+die kein anderer Sitz hält — und der Gastgeber prüft die Wahl noch einmal, bevor
+sie für alle gilt (`SeucheEngine::applyRole`, die einzige Stelle mit dieser
+Regel). Sobald die Partie läuft, sind die Rollen fest; das Sperrbit reist im
+`state` mit, damit es auf allen Geräten gleichzeitig zuschnappt.
 
 ## Geprüft
 

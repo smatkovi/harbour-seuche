@@ -91,7 +91,9 @@ Page {
                 text: qsTr("Partie beginnen")
                 onClicked: {
                     engine.newGame(page.seatCount, page.difficulty)
-                    pageStack.push(Qt.resolvedUrl("BoardPage.qml"))
+                    // roles first: they are dealt at random and may be swapped
+                    // freely until the first move
+                    pageStack.push(Qt.resolvedUrl("RolePage.qml"))
                 }
             }
 

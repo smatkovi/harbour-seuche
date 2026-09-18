@@ -106,6 +106,46 @@ int main(int argc, char *argv[])
           "actions carry a label");
     check(evaluate(&qml, QStringLiteral("engine.links[0].x1")).isValid(), "links carry coordinates");
 
+    // --- roles: free, but never twice -------------------------------------
+    check(evaluate(&qml, QStringLiteral("engine.rolesLocked")).isValid(),
+          QStringLiteral("engine.rolesLocked is undefined"));
+    check(evaluate(&qml, QStringLiteral("engine.freeRoles(0)")).isValid(),
+          QStringLiteral("engine.freeRoles() is undefined"));
+    check(!engine.rolesLocked(), QStringLiteral("roles are open before the first move"));
+
+    {
+        // four seats hold four of the seven roles, so three are gone for each
+        const QVariantList offered = engine.freeRoles(0);
+        check(offered.size() == seuche::kBaseRoles - 3, QStringLiteral("only free roles are offered"));
+
+        const auto roleNumber = [](const QString &name) {
+            for (int role = 0; role < seuche::kBaseRoles; ++role) {
+                if (QString::fromUtf8(seuche::roleName(seuche::Role(role))) == name)
+                    return role;
+            }
+            return -1;
+        };
+
+        const int neighbour = roleNumber(engine.players()[1].toMap()
+                                             .value(QStringLiteral("role")).toString());
+        check(neighbour >= 0, QStringLiteral("the neighbour's role has a name"));
+        check(!engine.chooseRole(0, neighbour), QStringLiteral("a taken role is refused"));
+        for (const QVariant &entry : offered) {
+            check(entry.toMap().value(QStringLiteral("roleId")).toInt() != neighbour,
+                  QStringLiteral("a taken role is not even offered"));
+        }
+
+        // a free one goes through and leaves the other seats' lists
+        const int wanted = offered.last().toMap().value(QStringLiteral("roleId")).toInt();
+        check(engine.chooseRole(0, wanted), QStringLiteral("a free role can be chosen"));
+        check(roleNumber(engine.players()[0].toMap().value(QStringLiteral("role")).toString()) == wanted,
+              QStringLiteral("the seat plays the chosen role"));
+        for (const QVariant &entry : engine.freeRoles(1)) {
+            check(entry.toMap().value(QStringLiteral("roleId")).toInt() != wanted,
+                  QStringLiteral("a chosen role is off the list everywhere"));
+        }
+    }
+
     // a whole game through the very calls the pages make
     int steps = 0;
     while (!engine.over() && steps++ < 20000) {
@@ -133,6 +173,8 @@ int main(int argc, char *argv[])
             break;
         }
     }
+    check(engine.rolesLocked(), QStringLiteral("roles lock once the game runs"));
+    check(!engine.chooseRole(0, 0), QStringLiteral("no role change in a running game"));
     check(engine.over(), QStringLiteral("the game reached an end"));
     check(!engine.outcomeText().isEmpty(), QStringLiteral("the end has a text"));
     check(!engine.journal().isEmpty(), QStringLiteral("the journal recorded it"));

@@ -22,10 +22,12 @@ Page {
     property int difficulty: 1
     property bool leaving: false
 
-    function openBoard() {
-        var board = pageStack.find(function (p) { return p.objectName === "boardPage" })
-        if (!board)
-            pageStack.push(Qt.resolvedUrl("BoardPage.qml"))
+    // Everyone picks a role first; what another device has taken is gone from
+    // the list before it can be picked twice.
+    function openRoles() {
+        var roles = pageStack.find(function (p) { return p.objectName === "rolePage" })
+        if (!roles)
+            pageStack.push(Qt.resolvedUrl("RolePage.qml"))
     }
 
     SilicaFlickable {
@@ -129,7 +131,7 @@ Page {
                     text: qsTr("Tisch eröffnen")
                     onClicked: {
                         if (engine.hostGame(page.seatCount, page.difficulty, tableName.text))
-                            page.openBoard()
+                            page.openRoles()
                     }
                 }
             }
@@ -196,7 +198,7 @@ Page {
         onChanged: {
             if (page.leaving && engine.running && engine.netRole === "guest") {
                 page.leaving = false
-                page.openBoard()
+                page.openRoles()
             }
         }
     }

@@ -9,8 +9,8 @@ import QtQuick 2.6
 import Sailfish.Silica 1.0
 import "."
 
-// A plain chooser. `entries` is a list of maps carrying either an `id` (cities,
-// infection cards) or a `seat` (players); the caller gets that number back.
+// A plain chooser for cities, seats, infection cards or roles. `entries` is a
+// list of maps; the caller gets back whichever number identifies the entry.
 Page {
     id: page
     allowedOrientations: Orientation.All
@@ -19,6 +19,26 @@ Page {
     property var entries: []
     property var onPicked: null
 
+    function labelOf(entry) {
+        return entry.name !== undefined ? entry.name : entry.role
+    }
+
+    function detailOf(entry) {
+        if (entry.ability !== undefined)
+            return entry.ability
+        if (entry.cityName !== undefined)
+            return entry.cityName
+        return ""
+    }
+
+    function valueOf(entry) {
+        if (entry.id !== undefined)
+            return entry.id
+        if (entry.roleId !== undefined)
+            return entry.roleId
+        return entry.seat
+    }
+
     SilicaListView {
         anchors.fill: parent
         model: page.entries
@@ -26,18 +46,33 @@ Page {
         header: PageHeader { title: page.title }
 
         delegate: ListItem {
-            contentHeight: Theme.itemSizeSmall
+            contentHeight: page.detailOf(modelData) === "" ? Theme.itemSizeSmall
+                                                           : Theme.itemSizeMedium
 
-            Label {
+            Column {
                 x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
-                text: modelData.name !== undefined ? modelData.name
-                                                   : modelData.role + " — " + modelData.cityName
+
+                Label {
+                    text: page.labelOf(modelData)
+                        + (modelData.current === true ? qsTr(" — jetzt") : "")
+                    color: modelData.current === true ? Theme.highlightColor : Theme.primaryColor
+                }
+
+                Label {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    visible: text.length > 0
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: page.detailOf(modelData)
+                }
             }
 
             onClicked: {
                 if (page.onPicked)
-                    page.onPicked(modelData.id !== undefined ? modelData.id : modelData.seat)
+                    page.onPicked(page.valueOf(modelData))
             }
         }
 

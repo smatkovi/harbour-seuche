@@ -130,6 +130,54 @@ int main(int argc, char *argv[])
     pump(200);
     check(fingerprint(host) == before, QStringLiteral("a foreign seat cannot be moved"));
 
+    // --- roles over the wire ----------------------------------------------
+    {
+        const int seatA = guestA.mySeats()[0].toInt();
+        const QVariantList offered = guestA.freeRoles(seatA);
+        check(!offered.isEmpty(), QStringLiteral("the guest is offered roles"));
+
+        // what the other seats hold is not even on the list
+        for (const QVariant &entry : offered) {
+            const int role = entry.toMap().value(QStringLiteral("roleId")).toInt();
+            for (int seat = 0; seat < 3; ++seat) {
+                if (seat == seatA)
+                    continue;
+                const QString name = host.players()[seat].toMap()
+                                         .value(QStringLiteral("role")).toString();
+                check(name != entry.toMap().value(QStringLiteral("name")).toString(),
+                      QStringLiteral("a role another seat holds is not offered"));
+            }
+            (void)role;
+        }
+
+        const int wanted = offered.last().toMap().value(QStringLiteral("roleId")).toInt();
+        const QString wantedName = offered.last().toMap().value(QStringLiteral("name")).toString();
+        guestA.chooseRole(seatA, wanted);
+        check(waitFor([&] {
+            return host.players()[seatA].toMap().value(QStringLiteral("role")).toString() == wantedName;
+        }), QStringLiteral("the host took over the guest's choice"));
+        check(waitFor([&] {
+            return guestB.players()[seatA].toMap().value(QStringLiteral("role")).toString() == wantedName;
+        }), QStringLiteral("the other guest sees it too"));
+
+        // the same role a second time, from another device: refused
+        const int seatB = guestB.mySeats()[0].toInt();
+        const QString beforeB = host.players()[seatB].toMap()
+                                    .value(QStringLiteral("role")).toString();
+        guestB.chooseRole(seatB, wanted);
+        pump(200);
+        check(host.players()[seatB].toMap().value(QStringLiteral("role")).toString() == beforeB,
+              QStringLiteral("a role is never handed out twice"));
+
+        // and a seat that belongs to someone else stays untouched
+        const QString beforeA = host.players()[seatA].toMap()
+                                    .value(QStringLiteral("role")).toString();
+        guestB.chooseRole(seatA, 0);
+        pump(200);
+        check(host.players()[seatA].toMap().value(QStringLiteral("role")).toString() == beforeA,
+              QStringLiteral("a foreign seat keeps its role"));
+    }
+
     // Play the game out across the wire.
     SeucheEngine *devices[] = {&host, &guestA, &guestB};
     int steps = 0;
@@ -150,6 +198,9 @@ int main(int argc, char *argv[])
     }
 
     check(host.over(), QStringLiteral("the game ended"));
+    check(host.rolesLocked(), QStringLiteral("roles locked once the game ran"));
+    check(waitFor([&] { return guestA.rolesLocked(); }),
+          QStringLiteral("the guests know the roles are locked"));
     check(waitFor([&] { return fingerprint(guestA) == fingerprint(host); }),
           QStringLiteral("guest A ends on the same board"));
     check(waitFor([&] { return fingerprint(guestB) == fingerprint(host); }),

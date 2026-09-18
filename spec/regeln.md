@@ -41,7 +41,9 @@ Forschungsstation, dort starten alle Figuren.
 3. Infektionsdeck mischen. Drei Karten aufdecken, je **3** Würfel der Stadtfarbe in
    diese Städte. Drei weitere: je **2** Würfel. Drei weitere: je **1** Würfel.
    Alle neun Karten auf den Infektionsablagestapel.
-4. Jede Person zieht eine Rolle (verdeckt gemischt, nie zwei gleiche).
+4. Jede Person zieht eine Rolle (verdeckt gemischt, nie zwei gleiche). In der App
+   dürfen die Rollen bis zum ersten Zug frei getauscht werden — jede Rolle bleibt
+   dabei einmalig, eine vergebene steht nicht mehr zur Wahl.
 5. Spielerdeck aus 48 Stadt- + 5 Ereigniskarten mischen und austeilen:
 
    | Personen | Handkarten zu Beginn |
