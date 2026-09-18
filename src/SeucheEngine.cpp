@@ -5,6 +5,8 @@
 */
 #include "SeucheEngine.h"
 
+#include "net/Snapshot.h"
+
 #include <QVariantMap>
 
 #include <algorithm>
@@ -42,6 +44,13 @@ SeucheEngine::SeucheEngine(QObject *parent)
     : QObject(parent)
     , rng_(std::mt19937(std::random_device{}()))
 {
+    connect(&session_, &LanSession::messageReceived, this, &SeucheEngine::handleMessage);
+    connect(&session_, &LanSession::peerJoined, this, &SeucheEngine::assignSeat);
+    connect(&session_, &LanSession::peerLost, this, &SeucheEngine::releaseSeats);
+    connect(&session_, &LanSession::peerConnectedChanged, this, &SeucheEngine::netChanged);
+    connect(&session_, &LanSession::connectionFailed, this, [this](const QString &reason) {
+        setStatus(tr("Verbindung fehlgeschlagen: %1").arg(reason));
+    });
 }
 
 QString SeucheEngine::phase() const
@@ -247,6 +256,9 @@ QVariantList SeucheEngine::cures() const
 
 void SeucheEngine::newGame(int seats, int difficulty)
 {
+    if (isGuest())
+        return;                       // only the host deals
+
     SetupOptions options;
     options.players = std::max(2, std::min(4, seats));
     options.difficulty = Difficulty(std::max(0, std::min(2, difficulty)));
@@ -257,6 +269,10 @@ void SeucheEngine::newGame(int seats, int difficulty)
     running_ = true;
     journal_.clear();
     note(tr("Neue Partie: %1 Personen").arg(options.players));
+    if (isHost()) {
+        seatOwner_.assign(options.players, -1);
+        sendState();
+    }
     refresh();
 }
 
@@ -362,10 +378,22 @@ QVariantList SeucheEngine::actionsForCity(int cityId) const
 
 bool SeucheEngine::run(int index)
 {
-    if (!running_ || index < 0 || index >= int(legal_.size()))
+    if (!running_ || index < 0 || index >= int(legal_.size()) || !mayAct())
         return false;
 
     const Action action = legal_[index];
+    if (isGuest()) {
+        QVariantMap message;
+        message[QStringLiteral("t")] = QStringLiteral("action");
+        message[QStringLiteral("a")] = wire::toVariant(action);
+        session_.send(message);
+        return true;              // the host answers with the new state
+    }
+    return applyAction(action);
+}
+
+bool SeucheEngine::applyAction(const Action &action)
+{
     const QString text = label(action);
     const int outbreaksBefore = game_.outbreaks;
 
@@ -378,13 +406,26 @@ bool SeucheEngine::run(int index)
     if (game_.over())
         note(outcomeText());
     refresh();
+    sendState();
     return true;
 }
 
 void SeucheEngine::drawCard()
 {
-    if (!running_ || game_.phase != Phase::Draw)
+    if (!running_ || game_.phase != Phase::Draw || !mayAct())
         return;
+    if (isGuest()) {
+        QVariantMap message;
+        message[QStringLiteral("t")] = QStringLiteral("step");
+        message[QStringLiteral("s")] = QStringLiteral("draw");
+        session_.send(message);
+        return;
+    }
+    applyDraw();
+}
+
+void SeucheEngine::applyDraw()
+{
 
     const int before = int(game_.playerDeck.size());
     const PlayerCard top = before > 0 ? game_.playerDeck.back() : PlayerCard();
@@ -406,12 +447,25 @@ void SeucheEngine::drawCard()
     if (game_.over())
         note(outcomeText());
     refresh();
+    sendState();
 }
 
 void SeucheEngine::infectCity()
 {
-    if (!running_ || game_.phase != Phase::Infect)
+    if (!running_ || game_.phase != Phase::Infect || !mayAct())
         return;
+    if (isGuest()) {
+        QVariantMap message;
+        message[QStringLiteral("t")] = QStringLiteral("step");
+        message[QStringLiteral("s")] = QStringLiteral("infect");
+        session_.send(message);
+        return;
+    }
+    applyInfect();
+}
+
+void SeucheEngine::applyInfect()
+{
 
     const City next = game_.infectionDeck.empty() ? City() : game_.infectionDeck.back();
     const int outbreaksBefore = game_.outbreaks;
@@ -426,17 +480,32 @@ void SeucheEngine::infectCity()
     if (game_.over())
         note(outcomeText());
     refresh();
+    sendState();
 }
 
 bool SeucheEngine::discardCard(int cardId)
 {
-    if (!running_ || game_.phase != Phase::Discard)
+    if (!running_ || game_.phase != Phase::Discard || !mayAct())
         return false;
-    const int seat = game_.discardingPlayer;
+    if (isGuest()) {
+        QVariantMap message;
+        message[QStringLiteral("t")] = QStringLiteral("discard");
+        message[QStringLiteral("card")] = cardId;
+        session_.send(message);
+        return true;
+    }
+    return applyDiscardCard(game_.discardingPlayer, cardId);
+}
+
+bool SeucheEngine::applyDiscardCard(int seat, int cardId)
+{
+    if (!running_ || game_.phase != Phase::Discard || seat != game_.discardingPlayer)
+        return false;
     if (discard(game_, seat, PlayerCard(std::uint8_t(cardId))) != Reason::Ok)
         return false;
     note(tr("Abgeworfen: %1").arg(cardLabel(cardId)));
     refresh();
+    sendState();
     return true;
 }
 
@@ -488,7 +557,7 @@ QVariantList SeucheEngine::eventCards() const
 
 bool SeucheEngine::playEvent(int seat, int event, int cityId, int pawn)
 {
-    if (!running_ || seat < 0 || seat >= int(game_.players.size()))
+    if (!running_ || seat < 0 || seat >= int(game_.players.size()) || !ownsSeat(seat))
         return false;
 
     EventPlay play;
@@ -498,11 +567,24 @@ bool SeucheEngine::playEvent(int seat, int event, int cityId, int pawn)
     play.pawn = std::uint8_t(pawn);
     play.removed = City(std::uint8_t(cityId));
     play.fromRoleCard = !hasCard(game_.players[seat].hand, eventCard(Event(event)));
+    return applyEventPlay(play);
+}
 
+bool SeucheEngine::applyEventPlay(const EventPlay &play)
+{
+    if (isGuest()) {
+        QVariantMap message;
+        message[QStringLiteral("t")] = QStringLiteral("event");
+        message[QStringLiteral("e")] = wire::toVariant(play);
+        session_.send(message);
+        return true;
+    }
     if (apply(game_, play, rng_) != Reason::Ok)
         return false;
-    note(tr("%1: %2").arg(seatName(seat)).arg(QString::fromUtf8(eventName(Event(event)))));
+    note(tr("%1: %2").arg(seatName(play.seat))
+                     .arg(QString::fromUtf8(eventName(play.event))));
     refresh();
+    sendState();
     return true;
 }
 
@@ -538,7 +620,7 @@ QVariantList SeucheEngine::forecastCards() const
 
 bool SeucheEngine::playForecast(int seat, const QVariantList &order)
 {
-    if (!running_ || seat < 0 || seat >= int(game_.players.size()))
+    if (!running_ || seat < 0 || seat >= int(game_.players.size()) || !ownsSeat(seat))
         return false;
 
     EventPlay play;
@@ -549,9 +631,236 @@ bool SeucheEngine::playForecast(int seat, const QVariantList &order)
     for (auto it = order.crbegin(); it != order.crend(); ++it)
         play.order.push_back(City(std::uint8_t(it->toInt())));
 
-    if (apply(game_, play, rng_) != Reason::Ok)
+    return applyEventPlay(play);
+}
+
+
+// --- network ---------------------------------------------------------------
+
+QString SeucheEngine::netRole() const
+{
+    switch (session_.role()) {
+    case LanSession::Host:  return QStringLiteral("host");
+    case LanSession::Guest: return QStringLiteral("guest");
+    case LanSession::None:  break;
+    }
+    return QStringLiteral("local");
+}
+
+QVariantList SeucheEngine::mySeats() const
+{
+    QVariantList list;
+    if (!running_)
+        return list;
+    for (int seat = 0; seat < int(game_.players.size()); ++seat) {
+        if (ownsSeat(seat))
+            list.append(seat);
+    }
+    return list;
+}
+
+int SeucheEngine::ownerOfSeat(int seat) const
+{
+    if (seat < 0 || seat >= int(seatOwner_.size()))
+        return -1;
+    return seatOwner_[seat];
+}
+
+bool SeucheEngine::ownsSeat(int seat) const
+{
+    if (session_.role() == LanSession::None)
+        return true;                              // hot seat: everything is ours
+    if (isHost())
+        return ownerOfSeat(seat) < 0;             // whatever was not given away
+    return std::find(mySeats_.begin(), mySeats_.end(), seat) != mySeats_.end();
+}
+
+int SeucheEngine::seatToAct() const
+{
+    if (!running_)
+        return -1;
+    if (game_.phase == Phase::Discard)
+        return game_.discardingPlayer;
+    return game_.atTurn;
+}
+
+bool SeucheEngine::mayAct() const
+{
+    if (!running_ || game_.over())
         return false;
-    note(tr("%1: Prognose").arg(seatName(seat)));
-    refresh();
+    return ownsSeat(seatToAct());
+}
+
+QVariantList SeucheEngine::seatOwners() const
+{
+    QVariantList list;
+    if (!running_)
+        return list;
+    for (int seat = 0; seat < int(game_.players.size()); ++seat) {
+        QVariantMap entry;
+        entry[QStringLiteral("seat")] = seat;
+        entry[QStringLiteral("role")] = QString::fromUtf8(roleName(game_.players[seat].role));
+        entry[QStringLiteral("mine")] = ownsSeat(seat);
+        entry[QStringLiteral("peer")] = ownerOfSeat(seat);
+        list.append(entry);
+    }
+    return list;
+}
+
+void SeucheEngine::setStatus(const QString &text)
+{
+    netStatus_ = text;
+    emit netChanged();
+}
+
+bool SeucheEngine::hostGame(int seats, int difficulty, const QString &name)
+{
+    session_.stop();
+    seatOwner_.clear();
+    mySeats_.clear();
+
+    QString error;
+    const QString shown = name.isEmpty() ? tr("Seuche") : name;
+    if (!session_.startHosting(shown, seats, seats - 1, &error)) {
+        setStatus(tr("Konnte nicht öffnen: %1").arg(error));
+        return false;
+    }
+    newGame(seats, difficulty);                   // deals and sends the state
+    seatOwner_.assign(seats, -1);
+    setStatus(tr("Offen für %1 Geräte").arg(seats - 1));
+    emit netChanged();
     return true;
+}
+
+void SeucheEngine::joinGame(const QString &address)
+{
+    session_.stop();
+    running_ = false;
+    seatOwner_.clear();
+    mySeats_.clear();
+    session_.joinHost(LanSession::normalizeAddress(address));
+    setStatus(tr("Verbinde mit %1 …").arg(address));
+    emit changed();
+}
+
+void SeucheEngine::leaveNetwork()
+{
+    session_.stop();
+    seatOwner_.clear();
+    mySeats_.clear();
+    setStatus(QString());
+    emit changed();
+}
+
+void SeucheEngine::sendState()
+{
+    if (!isHost() || !running_)
+        return;
+
+    QVariantList owners;
+    for (int owner : seatOwner_)
+        owners.append(owner);
+
+    QVariantMap message;
+    message[QStringLiteral("t")] = QStringLiteral("state");
+    message[QStringLiteral("g")] = wire::toSnapshot(game_);
+    message[QStringLiteral("journal")] = QStringList(journal_.mid(qMax(0, journal_.size() - 40)));
+    message[QStringLiteral("owners")] = owners;
+    session_.send(message);
+}
+
+void SeucheEngine::assignSeat(int peer)
+{
+    if (!isHost() || !running_)
+        return;
+
+    // Seat 0 stays with the host; every guest gets the next free one.
+    int given = -1;
+    for (int seat = 1; seat < int(seatOwner_.size()); ++seat) {
+        if (seatOwner_[seat] < 0) {
+            seatOwner_[seat] = peer;
+            given = seat;
+            break;
+        }
+    }
+
+    QVariantMap welcome;
+    welcome[QStringLiteral("t")] = QStringLiteral("welcome");
+    welcome[QStringLiteral("seat")] = given;
+    session_.sendTo(peer, welcome);
+    sendState();
+
+    note(given >= 0 ? tr("Gerät übernimmt %1").arg(seatName(given))
+                    : tr("Ein Gerät sieht zu"));
+    setStatus(tr("%1 Geräte verbunden").arg(session_.peerCount()));
+    refresh();
+}
+
+void SeucheEngine::releaseSeats(int peer)
+{
+    for (int seat = 0; seat < int(seatOwner_.size()); ++seat) {
+        if (seatOwner_[seat] == peer) {
+            seatOwner_[seat] = -1;
+            note(tr("%1 wird wieder hier gespielt").arg(seatName(seat)));
+        }
+    }
+    setStatus(tr("%1 Geräte verbunden").arg(session_.peerCount()));
+    sendState();
+    refresh();
+}
+
+void SeucheEngine::handleMessage(int peer, const QVariantMap &message)
+{
+    const QString type = message.value(QStringLiteral("t")).toString();
+
+    if (isGuest()) {
+        if (type == QLatin1String("state")) {
+            if (!wire::fromSnapshot(message.value(QStringLiteral("g")).toMap(), game_))
+                return;
+            running_ = true;
+            journal_ = message.value(QStringLiteral("journal")).toStringList();
+            const QVariantList owners = message.value(QStringLiteral("owners")).toList();
+            seatOwner_.clear();
+            for (const QVariant &owner : owners)
+                seatOwner_.push_back(owner.toInt());
+            refresh();
+            emit netChanged();
+        } else if (type == QLatin1String("welcome")) {
+            mySeats_.clear();
+            const int seat = message.value(QStringLiteral("seat")).toInt();
+            if (seat >= 0) {
+                mySeats_.push_back(seat);
+                setStatus(tr("Verbunden — Sitz %1").arg(seat + 1));
+            } else {
+                setStatus(tr("Verbunden — Zuschauer"));
+            }
+        }
+        return;
+    }
+
+    if (!isHost() || !running_)
+        return;
+
+    // The host is the referee: a device may only move the seat it holds.
+    if (type == QLatin1String("action")) {
+        if (ownerOfSeat(seatToAct()) != peer)
+            return;
+        applyAction(wire::actionFromVariant(message.value(QStringLiteral("a")).toMap()));
+    } else if (type == QLatin1String("step")) {
+        if (ownerOfSeat(seatToAct()) != peer)
+            return;
+        if (message.value(QStringLiteral("s")).toString() == QLatin1String("draw"))
+            applyDraw();
+        else
+            applyInfect();
+    } else if (type == QLatin1String("discard")) {
+        if (ownerOfSeat(game_.discardingPlayer) != peer)
+            return;
+        applyDiscardCard(game_.discardingPlayer, message.value(QStringLiteral("card")).toInt());
+    } else if (type == QLatin1String("event")) {
+        const EventPlay play = wire::eventFromVariant(message.value(QStringLiteral("e")).toMap());
+        if (ownerOfSeat(play.seat) != peer)
+            return;
+        applyEventPlay(play);
+    }
 }

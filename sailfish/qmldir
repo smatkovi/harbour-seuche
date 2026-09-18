@@ -8,6 +8,7 @@ BoardPage 1.0 BoardPage.qml
 EventPage 1.0 EventPage.qml
 ForecastPage 1.0 ForecastPage.qml
 HandPage 1.0 HandPage.qml
+LanPage 1.0 LanPage.qml
 LogPage 1.0 LogPage.qml
 MainPage 1.0 MainPage.qml
 PickPage 1.0 PickPage.qml

@@ -92,6 +92,8 @@ Genau eine Erweiterung bricht das: der **Bioterrorist** zieht verdeckt gegen das
 Team. Solange das Modul aus ist, bleibt der einfache Weg gültig; eingeschaltet
 braucht er einen eigenen Protokollpfad mit Sichtfiltern je Empfänger.
 
+So ist es seit 0.2.0 auch gebaut — Einzelheiten in `netz.md`.
+
 ## Stand
 
 `tests/test_model.cpp` prüft Kartendaten, Aufbau für 2–4 Personen, Kartenzahlen,
@@ -130,4 +132,5 @@ Aufrufe der Seiten durch — eine Eigenschaft, die in QML als `undefined` ankomm
 fällt dort auf und nicht erst als leere Seite auf dem Gerät.
 
 Computergegner sind nicht vorgesehen; gespielt wird kooperativ mit 2–4 Sitzen an
-einem Gerät. Nächster Schritt: LAN/Online, danach die Erweiterungsmodule.
+einem Gerät oder über mehrere Geräte im WLAN. Nächster Schritt: die
+Erweiterungsmodule — dafür fehlen aber die Regelhefte.

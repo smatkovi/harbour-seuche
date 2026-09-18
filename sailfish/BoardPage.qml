@@ -46,6 +46,10 @@ Page {
                 text: qsTr("Ereigniskarte spielen")
                 onClicked: pageStack.push(Qt.resolvedUrl("EventPage.qml"))
             }
+            MenuItem {
+                text: qsTr("Netzwerk")
+                onClicked: pageStack.push(Qt.resolvedUrl("LanPage.qml"))
+            }
         }
 
         Column {
@@ -55,9 +59,16 @@ Page {
 
             PageHeader {
                 title: engine.phaseText
-                description: engine.players.length > 0
-                    ? engine.players[engine.atTurn].role + " — " + engine.players[engine.atTurn].cityName
-                    : ""
+                description: {
+                    if (engine.players.length === 0)
+                        return ""
+                    var line = engine.players[engine.atTurn].role + " — "
+                             + engine.players[engine.atTurn].cityName
+                    if (engine.netRole !== "local")
+                        line += engine.mayAct ? qsTr(" · du bist dran")
+                                              : qsTr(" · anderes Gerät ist dran")
+                    return line
+                }
             }
 
             // --- status ---------------------------------------------------
@@ -218,6 +229,7 @@ Page {
                                 MouseArea {
                                     anchors.fill: parent
                                     anchors.margins: -dot.width / 3
+                                    enabled: engine.mayAct
                                     onClicked: pageStack.push(Qt.resolvedUrl("ActionPage.qml"),
                                                               { cityId: cityItem.city.id })
                                 }
@@ -261,21 +273,25 @@ Page {
 
                 Button {
                     visible: engine.phase === "actions"
+                    enabled: engine.mayAct
                     text: qsTr("Aktionen")
                     onClicked: pageStack.push(Qt.resolvedUrl("ActionPage.qml"), { cityId: -1 })
                 }
                 Button {
                     visible: engine.phase === "draw"
+                    enabled: engine.mayAct
                     text: qsTr("Karte ziehen (%1)").arg(engine.drawsLeft)
                     onClicked: engine.drawCard()
                 }
                 Button {
                     visible: engine.phase === "discard"
+                    enabled: engine.mayAct
                     text: qsTr("Abwerfen")
                     onClicked: pageStack.push(Qt.resolvedUrl("HandPage.qml"))
                 }
                 Button {
                     visible: engine.phase === "infect"
+                    enabled: engine.mayAct
                     text: qsTr("Infizieren (%1)").arg(engine.infectionsLeft)
                     onClicked: engine.infectCity()
                 }

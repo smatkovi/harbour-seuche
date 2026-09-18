@@ -11,7 +11,7 @@ Grafik, Rollen- und Ereignisbezeichnungen sowie alle Texte sind eigenständig.
 | Regelwerk, Spielplan, Datenmodell | `spec/` — fertig |
 | Regelkern (`src/core`) | Aufbau, Aktionen, Ziehen, Epidemie, Infektion, Ausbrüche, Sieg/Niederlage — fertig und getestet |
 | App (Silica/QML) | spielbar: Spielplan, Aktionen je Stadt, Handkarten, Ereigniskarten, Protokoll |
-| LAN/Online | offen |
+| LAN (`spec/netz.md`) | 2–4 Geräte im WLAN: Gastgeber hält die Partie, Gäste spiegeln sie |
 | Erweiterungsmodule | vorgesehen, nicht implementiert (`spec/regeln.md`, §10) |
 
 Computergegner sind **nicht** geplant: Das Spiel ist kooperativ, alle Sitze werden
@@ -21,12 +21,14 @@ an einem Gerät gesteuert. Beim Start wird gewählt, wie viele Personen mitspiel
 ## Aufbau
 
 ```
-spec/      Regelwerk (regeln.md), Spielplan (karte.md), Datenmodell (datenmodell.md)
+spec/      Regelwerk (regeln.md), Spielplan (karte.md), Datenmodell (datenmodell.md),
+           Netzwerkspiel (netz.md)
 src/core/  Regelkern, reines C++17 ohne Qt
 src/       SeucheEngine — die QML-Brücke, und main.cpp
+src/net/   LAN-Transport (aus harbour-snapszer) und Drahtformat
 sailfish/  Silica-Oberfläche, Symbole, Desktop-Datei
 rpm/       Paketbeschreibung
-tests/     drei Testprogramme ohne Framework
+tests/     vier Testprogramme ohne Framework
 tools/     Bauen, Testen, Symbol, Veröffentlichen
 ```
 

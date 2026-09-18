@@ -70,7 +70,8 @@ Page {
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeExtraSmall
                 text: qsTr("Alle Sitze werden hier gesteuert; die Rollen werden zufällig gezogen. "
-                           + "Zu zweit hat jede Person 4 Handkarten, zu dritt 3, zu viert 2.")
+                           + "Zu zweit hat jede Person 4 Handkarten, zu dritt 3, zu viert 2.\n"
+                           + "Über mehrere Geräte geht es unter „Im Netzwerk spielen\".")
             }
 
             ComboBox {
@@ -92,6 +93,12 @@ Page {
                     engine.newGame(page.seatCount, page.difficulty)
                     pageStack.push(Qt.resolvedUrl("BoardPage.qml"))
                 }
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Im Netzwerk spielen")
+                onClicked: pageStack.push(Qt.resolvedUrl("LanPage.qml"))
             }
 
             Button {

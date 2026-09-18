@@ -14,6 +14,7 @@
 
 #include "core/Rules.h"
 #include "core/Setup.h"
+#include "net/LanSession.h"
 
 #include <QObject>
 #include <QString>
@@ -27,8 +28,10 @@
 // actions, gets them with a finished German label, and sends back the index of
 // the one that was tapped. Everything that could go wrong stays on this side.
 //
-// All seats are played on this device (co-operative hot seat). The seat count is
-// chosen when the game starts; the network mode will later mark seats as remote.
+// Without a network every seat is played on this device (co-operative hot seat).
+// In a LAN game the host keeps the one real Game and is the only device that
+// ever changes it: guests mirror the state, work out the legal actions locally
+// for their own display, and send the chosen action over the wire.
 class SeucheEngine : public QObject
 {
     Q_OBJECT
@@ -53,6 +56,14 @@ class SeucheEngine : public QObject
     Q_PROPERTY(QVariantList players READ players NOTIFY changed)
     Q_PROPERTY(QVariantList cures READ cures NOTIFY changed)
     Q_PROPERTY(QStringList journal READ journal NOTIFY changed)
+
+    // network
+    Q_PROPERTY(QString netRole READ netRole NOTIFY netChanged)
+    Q_PROPERTY(QString netStatus READ netStatus NOTIFY netChanged)
+    Q_PROPERTY(int peerCount READ peerCount NOTIFY netChanged)
+    Q_PROPERTY(QVariantList mySeats READ mySeats NOTIFY netChanged)
+    Q_PROPERTY(bool mayAct READ mayAct NOTIFY changed)
+    Q_PROPERTY(LanBrowser *browser READ browser CONSTANT)
 
 public:
     explicit SeucheEngine(QObject *parent = nullptr);
@@ -106,8 +117,26 @@ public:
     Q_INVOKABLE QString cityName(int cityId) const;
     Q_INVOKABLE QString cardLabel(int cardId) const;
 
+    // --- network ---
+    QString netRole() const;
+    QString netStatus() const { return netStatus_; }
+    int peerCount() const { return session_.peerCount(); }
+    QVariantList mySeats() const;
+    // True when the seat that has to act right now belongs to this device.
+    bool mayAct() const;
+    LanBrowser *browser() { return &browser_; }
+
+    // Starts a game and offers it on the network. `name` is what searching
+    // devices see.
+    Q_INVOKABLE bool hostGame(int seats, int difficulty, const QString &name);
+    Q_INVOKABLE void joinGame(const QString &address);
+    Q_INVOKABLE void leaveNetwork();
+    // Which seat a device holds, for the seat list on the LAN page.
+    Q_INVOKABLE QVariantList seatOwners() const;
+
 signals:
     void changed();
+    void netChanged();
 
 private:
     void refresh();                       // recompute the legal actions, emit changed
@@ -115,9 +144,35 @@ private:
     QString label(const seuche::Action &action) const;
     QString seatName(int seat) const;
 
+    // The four ways the state changes. On a host these run here; a guest sends
+    // the same thing over the wire and waits for the new state.
+    bool applyAction(const seuche::Action &action);
+    void applyDraw();
+    void applyInfect();
+    bool applyDiscardCard(int seat, int cardId);
+    bool applyEventPlay(const seuche::EventPlay &play);
+    bool ownsSeat(int seat) const;
+
+    // --- network helpers ---
+    bool isHost() const { return session_.role() == LanSession::Host; }
+    bool isGuest() const { return session_.role() == LanSession::Guest; }
+    int ownerOfSeat(int seat) const;          // peer id, -1 for this device
+    int seatToAct() const;                    // whose turn it is to do something
+    void sendState();                         // host: full state to every guest
+    void handleMessage(int peer, const QVariantMap &message);
+    void assignSeat(int peer);
+    void releaseSeats(int peer);
+    void setStatus(const QString &text);
+
     seuche::Game game_;
     std::vector<seuche::Action> legal_;
     std::mt19937 rng_;
     QStringList journal_;
     bool running_ = false;
+
+    LanSession session_;
+    LanBrowser browser_;
+    QString netStatus_;
+    std::vector<int> seatOwner_;   // per seat: peer id, -1 = this device
+    std::vector<int> mySeats_;     // guest: the seats this device was given
 };

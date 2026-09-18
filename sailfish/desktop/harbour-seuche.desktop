@@ -8,5 +8,6 @@ Categories=Game;
 X-Sailfish-ApplicationType=Silica
 
 [X-Sailjail]
+Permissions=Internet
 OrganizationName=harbour-seuche
 ApplicationName=harbour-seuche

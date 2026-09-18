@@ -1,5 +1,5 @@
 Name: harbour-seuche
-Version: 0.1.0
+Version: 0.2.0
 Release: 1
 Summary: Kooperatives Seuchen-Brettspiel
 License: GPL-3.0-or-later
@@ -10,6 +10,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Requires:       sailfishsilica-qt5
 BuildRequires:  pkgconfig(sailfishapp)
 BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 
@@ -19,9 +20,10 @@ diseases break out around the world, and the table wins only by discovering a
 cure for all four before eight outbreaks happen, a cube supply runs dry or the
 player deck runs out.
 
-Every seat is played on this device. The rule core is plain C++ and covered by
-its own tests; the expansion modules have room in the model but are not built
-yet.
+Play every seat on one device, or open a table in the local network and
+let two to four phones share it: the host keeps the game, the guests
+mirror it. The rule core is plain C++ and covered by its own tests; the
+expansion modules have room in the model but are not built yet.
 
 %prep
 %setup -q
@@ -70,6 +72,12 @@ install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
 /usr/share/licenses/%{name}
 
 %changelog
+* Fri Sep 18 2026 smatkovi - 0.2.0-1
+- Netzwerkspiel im WLAN: ein Gerät eröffnet, zwei bis vier spielen zusammen
+- Tische werden per UDP gefunden, Adresse geht auch von Hand
+- Jedes Gerät bewegt nur seinen Sitz; freie Sitze spielt der Gastgeber mit
+- Fällt ein Gerät aus, übernimmt der Gastgeber dessen Sitz
+
 * Fri Sep 18 2026 smatkovi - 0.1.0-1
 - Erste Fassung: vollständiges Grundspiel für 2 bis 4 Sitze an einem Gerät
 - Spielplan mit 48 Städten, Aktionen, Epidemien, Ausbrüchen, Ereigniskarten
