@@ -29,7 +29,7 @@ src/net/   LAN-Transport (aus harbour-snapszer) und Drahtformat
 sailfish/  Silica-Oberfläche, Symbole, Desktop-Datei
 rpm/       Paketbeschreibung
 tests/     vier Testprogramme ohne Framework
-tools/     Bauen, Testen, Symbol, Veröffentlichen
+tools/     Bauen (build.sh), Testen (test.sh), Symbol, Veröffentlichen (release.sh)
 ```
 
 `spec/karte.md` wird aus `src/core/Map.cpp` erzeugt (`tools/genmap.py`), nicht von
@@ -41,19 +41,27 @@ Auf dem Telefon steht kein C++-Compiler; gebaut wird auf dem Arch-Rechner:
 
     tools/test.sh            # Regelkern bauen und beide Kerntests laufen lassen
 
-Das RPM und der Test der QML-Brücke brauchen das Sailfish-SDK im Container
+Die Pakete und der Test der QML-Brücke brauchen das Sailfish-SDK im Container
 `sfossdk52` auf demselben Rechner:
 
-    # Paket
-    mb2 -t SailfishOS-5.2.0.15-aarch64 build
-    # alle drei Tests
+    tools/build.sh              # RPMs für aarch64 und armv7hl
+    tools/build.sh aarch64      # nur eine Architektur
+
+    # alle vier Tests, im Container gegen das i486-Ziel
     sb2 -t SailfishOS-5.2.0.15-i486 cmake .. -DSEUCHE_BUILD_TESTS=ON && make && ctest
 
 ## Veröffentlichen
 
-RPMs erscheinen als Release dieses Repos:
+RPMs erscheinen als Release dieses Repos, je Version eines für **aarch64** und
+eines für **armv7hl**:
 
-    tools/release.sh 0.1.0 pfad/zum/harbour-seuche-0.1.0-1.aarch64.rpm
+    tools/build.sh
+    tools/release.sh 0.2.0 ~/ps/rpms/seuche/harbour-seuche-0.2.0-1.*.rpm
 
-Das Skript legt das Tag an, erzeugt das Release und hängt das RPM an; eine Kopie
-landet zusätzlich in `~/ps/rpms/seuche/`.
+`release.sh` erzeugt das Release und hängt alle übergebenen Pakete an (ein
+bestehendes Release wird ergänzt); Kopien liegen in `~/ps/rpms/seuche/`.
+
+| Architektur | Geräte |
+|---|---|
+| `aarch64` | Sailfish 4.4 und neuer, 64-bit — z. B. Xperia 10 III/IV/V |
+| `armv7hl` | ältere 32-bit-Geräte |
