@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Seuche
+Comment=Kooperatives Seuchen-Brettspiel für 2 bis 4 Personen
+Icon=harbour-seuche
+Exec=harbour-seuche
+Type=Application
+Categories=Game;
+X-Sailfish-ApplicationType=Silica
+
+[X-Sailjail]
+OrganizationName=harbour-seuche
+ApplicationName=harbour-seuche

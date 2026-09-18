@@ -263,7 +263,8 @@ genau enthalten sind, müsste ich nachsehen — als Modul umsetzbar sind alle dr
 
 ### Reihenfolge
 
-Zuerst das Grundspiel vollständig (`Rules.cpp`, Bots, Oberfläche). Danach sind
+Zuerst das Grundspiel vollständig (Regelkern und Oberfläche — beides steht).
+Danach sind
 **Virulenter Stamm** und **Mutation** die kleinsten Schritte, weil sie nur an
 Epidemie und Farbzahl hängen. **Labor** und **Weltweite Panik** sind je ein eigenes
 Regelpaket. **Bioterrorist** kommt zuletzt, weil er den Netzwerkteil umbaut —

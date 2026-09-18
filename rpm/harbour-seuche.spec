@@ -1,0 +1,76 @@
+Name: harbour-seuche
+Version: 0.1.0
+Release: 1
+Summary: Kooperatives Seuchen-Brettspiel
+License: GPL-3.0-or-later
+URL: https://github.com/smatkovi/harbour-seuche
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
+
+Requires:       sailfishsilica-qt5
+BuildRequires:  pkgconfig(sailfishapp)
+BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5Qml)
+BuildRequires:  pkgconfig(Qt5Quick)
+
+%description
+Seuche is a co-operative board game for two to four players on one device: four
+diseases break out around the world, and the table wins only by discovering a
+cure for all four before eight outbreaks happen, a cube supply runs dry or the
+player deck runs out.
+
+Every seat is played on this device. The rule core is plain C++ and covered by
+its own tests; the expansion modules have room in the model but are not built
+yet.
+
+%prep
+%setup -q
+
+%build
+mkdir -p build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}/usr/bin
+install -m 755 build/harbour-seuche %{buildroot}/usr/bin/
+
+mkdir -p %{buildroot}/usr/share/%{name}/qml
+cp -a sailfish/*.qml sailfish/qmldir %{buildroot}/usr/share/%{name}/qml/
+
+mkdir -p %{buildroot}/usr/share/applications
+install -m 644 sailfish/desktop/%{name}.desktop %{buildroot}/usr/share/applications/%{name}.desktop
+
+for size in 86 108 128 172 256; do
+    mkdir -p %{buildroot}/usr/share/icons/hicolor/${size}x${size}/apps
+    install -m 644 sailfish/icons/icon-${size}.png \
+        %{buildroot}/usr/share/icons/hicolor/${size}x${size}/apps/%{name}.png
+done
+
+# cp -a keeps the group-writable bits of the working tree; the package wants
+# plain 755 directories and 644 files (rpmlint non-standard-dir-perm).
+find %{buildroot}/usr/share/%{name} -type d -exec chmod 755 {} \;
+find %{buildroot}/usr/share/%{name} -type f -exec chmod 644 {} \;
+
+mkdir -p %{buildroot}/usr/share/doc/%{name}
+install -m 644 README.md %{buildroot}/usr/share/doc/%{name}/
+install -m 644 spec/regeln.md %{buildroot}/usr/share/doc/%{name}/
+mkdir -p %{buildroot}/usr/share/licenses/%{name}
+install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
+
+%files
+%defattr(-,root,root,-)
+/usr/bin/%{name}
+/usr/share/%{name}
+/usr/share/icons/hicolor/*/apps/%{name}.png
+/usr/share/applications/%{name}.desktop
+/usr/share/doc/%{name}
+/usr/share/licenses/%{name}
+
+%changelog
+* Fri Sep 18 2026 smatkovi - 0.1.0-1
+- Erste Fassung: vollständiges Grundspiel für 2 bis 4 Sitze an einem Gerät
+- Spielplan mit 48 Städten, Aktionen, Epidemien, Ausbrüchen, Ereigniskarten
+- Alle sieben Rollen, drei Schwierigkeitsgrade

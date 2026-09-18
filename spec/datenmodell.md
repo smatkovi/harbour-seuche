@@ -122,4 +122,12 @@ all rules checks passed
 Dass Zufallszüge nie gewinnen, ist erwartbar — der Durchlauf sucht keine Strategie,
 sondern Zustandsfehler.
 
-Nächster Schritt: Computergegner, danach die QML-Oberfläche, dann LAN/Online.
+Die QML-Brücke `src/SeucheEngine.*` legt genau diesen Zustand für die Oberfläche
+aus: Städte mit Würfeln, Figuren und Stationen, Hände, Heilmittel, dazu die
+legalen Aktionen mit fertigem deutschem Text. `tests/test_qmlbridge.cpp` wertet
+jede davon in einer echten `QQmlEngine` aus und spielt eine ganze Partie über die
+Aufrufe der Seiten durch — eine Eigenschaft, die in QML als `undefined` ankommt,
+fällt dort auf und nicht erst als leere Seite auf dem Gerät.
+
+Computergegner sind nicht vorgesehen; gespielt wird kooperativ mit 2–4 Sitzen an
+einem Gerät. Nächster Schritt: LAN/Online, danach die Erweiterungsmodule.
