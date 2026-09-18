@@ -27,8 +27,15 @@ REPO=${REPO:-smatkovi/harbour-seuche}
 TAG=v$VERSION
 WORK=/tmp/seuche-release
 
+# Keep a local copy next to the other apps' packages — unless the file that was
+# handed in already is that copy.
 mkdir -p "$HOME/ps/rpms/seuche"
-cp "$@" "$HOME/ps/rpms/seuche/"
+for FILE in "$@"; do
+    DEST="$HOME/ps/rpms/seuche/$(basename "$FILE")"
+    if [ "$(readlink -f "$FILE")" != "$(readlink -f "$DEST")" ]; then
+        cp "$FILE" "$DEST"
+    fi
+done
 
 NOTES=$(mktemp)
 cat > "$NOTES" <<NOTE
