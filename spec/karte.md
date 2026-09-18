@@ -12,6 +12,10 @@ hinten an.
 
 Gradverteilung: 1×1, 4×2, 12×3, 16×4, 13×5, 2×6.
 
+Hinter den Städten liegt in der App eine grobe Landmaske (`sailfish/world.png`,
+erzeugt von `tools/make_world.py`). Sie ist Orientierung, keine Regel: verbunden
+sind Städte genau dann, wenn diese Tabelle es sagt.
+
 Erzeugt aus `src/core/Map.cpp` mit `tools/genmap.py`, nicht von Hand pflegen.
 
 ## Blau (Nordamerika, Europa)

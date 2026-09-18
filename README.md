@@ -10,7 +10,7 @@ Grafik, Rollen- und Ereignisbezeichnungen sowie alle Texte sind eigenständig.
 |---|---|
 | Regelwerk, Spielplan, Datenmodell | `spec/` — fertig |
 | Regelkern (`src/core`) | Aufbau, Aktionen, Ziehen, Epidemie, Infektion, Ausbrüche, Sieg/Niederlage — fertig und getestet |
-| App (Silica/QML) | spielbar: Spielplan mit Zoom, Aktionen je Stadt, Rollenwahl, Handkarten, Ereigniskarten, Protokoll |
+| App (Silica/QML) | spielbar: Spielplan mit Landkarte und Zoom (klein und formatfüllend), Aktionen je Stadt, Rollenwahl, Handkarten, Ereigniskarten, Protokoll |
 | LAN (`spec/netz.md`) | 2–4 Geräte im WLAN: Gastgeber hält die Partie, Gäste spiegeln sie |
 | Erweiterungsmodule | vorgesehen, nicht implementiert (`spec/regeln.md`, §10) |
 
@@ -29,11 +29,13 @@ src/net/   LAN-Transport (aus harbour-snapszer) und Drahtformat
 sailfish/  Silica-Oberfläche, Symbole, Desktop-Datei
 rpm/       Paketbeschreibung
 tests/     vier Testprogramme ohne Framework
-tools/     Bauen (build.sh), Testen (test.sh), Symbol, Veröffentlichen (release.sh)
+tools/     Bauen (build.sh), Testen (test.sh), Symbol (make_icon.py),
+           Landhintergrund (make_world.py), Veröffentlichen (release.sh)
 ```
 
 `spec/karte.md` wird aus `src/core/Map.cpp` erzeugt (`tools/genmap.py`), nicht von
-Hand pflegen.
+Hand pflegen. `sailfish/world.png` erzeugt `tools/make_world.py` aus den
+Flugplatzdaten, die harbour-fgview mitbringt — Einzelheiten in `CREDITS.md`.
 
 ## Bauen und testen
 

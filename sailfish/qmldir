@@ -4,12 +4,14 @@ singleton Style 1.0 Style.qml
 
 AboutPage 1.0 AboutPage.qml
 ActionPage 1.0 ActionPage.qml
+Board 1.0 Board.qml
 BoardPage 1.0 BoardPage.qml
 EventPage 1.0 EventPage.qml
 ForecastPage 1.0 ForecastPage.qml
 HandPage 1.0 HandPage.qml
 LanPage 1.0 LanPage.qml
 LogPage 1.0 LogPage.qml
+MapPage 1.0 MapPage.qml
 MainPage 1.0 MainPage.qml
 PickPage 1.0 PickPage.qml
 RolePage 1.0 RolePage.qml

@@ -45,6 +45,10 @@ out = [
     "",
     "Gradverteilung: %s." % spread,
     "",
+    "Hinter den Städten liegt in der App eine grobe Landmaske (`sailfish/world.png`,",
+    "erzeugt von `tools/make_world.py`). Sie ist Orientierung, keine Regel: verbunden",
+    "sind Städte genau dann, wenn diese Tabelle es sagt.",
+    "",
     "Erzeugt aus `src/core/Map.cpp` mit `tools/genmap.py`, nicht von Hand pflegen.",
     "",
 ]

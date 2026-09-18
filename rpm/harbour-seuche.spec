@@ -1,5 +1,5 @@
 Name: harbour-seuche
-Version: 0.3.0
+Version: 0.4.0
 Release: 1
 Summary: Kooperatives Seuchen-Brettspiel
 License: GPL-3.0-or-later
@@ -40,7 +40,7 @@ mkdir -p %{buildroot}/usr/bin
 install -m 755 build/harbour-seuche %{buildroot}/usr/bin/
 
 mkdir -p %{buildroot}/usr/share/%{name}/qml
-cp -a sailfish/*.qml sailfish/qmldir %{buildroot}/usr/share/%{name}/qml/
+cp -a sailfish/*.qml sailfish/qmldir sailfish/world.png %{buildroot}/usr/share/%{name}/qml/
 
 mkdir -p %{buildroot}/usr/share/applications
 install -m 644 sailfish/desktop/%{name}.desktop %{buildroot}/usr/share/applications/%{name}.desktop
@@ -58,6 +58,7 @@ find %{buildroot}/usr/share/%{name} -type f -exec chmod 644 {} \;
 
 mkdir -p %{buildroot}/usr/share/doc/%{name}
 install -m 644 README.md %{buildroot}/usr/share/doc/%{name}/
+install -m 644 CREDITS.md %{buildroot}/usr/share/doc/%{name}/
 install -m 644 spec/regeln.md %{buildroot}/usr/share/doc/%{name}/
 mkdir -p %{buildroot}/usr/share/licenses/%{name}
 install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
@@ -72,6 +73,15 @@ install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
 /usr/share/licenses/%{name}
 
 %changelog
+* Fri Sep 18 2026 smatkovi - 0.4.0-1
+- Die Karte hat einen Landhintergrund: eine grobe Weltkarte, aus den
+  FlightGear-Flugplatzdaten gerechnet, statt abstrakter Farbflächen
+- Längentreues Seitenverhältnis, damit die Lage der Städte stimmt
+- Neue Seite „Karte groß“: der Spielplan formatfüllend, im Querformat lesbar
+- Würfel rechts, Figuren links, Station als Quadrat — feste Plätze statt
+  wechselnder Stapel über und unter der Stadt
+- Städtenamen immer dort, wo Würfel liegen oder die Figur am Zug steht
+
 * Fri Sep 18 2026 smatkovi - 0.3.0-1
 - Rollen sind frei wählbar, bis der erste Zug geschehen ist; jede Rolle nur
   einmal, auch über mehrere Geräte — eine vergebene steht nicht mehr zur Wahl
