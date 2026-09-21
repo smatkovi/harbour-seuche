@@ -159,6 +159,14 @@ signals:
     void changed();
     void netChanged();
 
+// Qt 4 (the Nokia N9 edition) connects by signature, so everything a signal
+// reaches has to be a declared slot.
+private slots:
+    void handleMessage(int peer, const QVariantMap &message);
+    void assignSeat(int peer);
+    void releaseSeats(int peer);
+    void onConnectionFailed(const QString &reason);
+
 private:
     void refresh();                       // recompute the legal actions, emit changed
     void note(const QString &line);
@@ -201,9 +209,6 @@ private:
     int ownerOfSeat(int seat) const;          // peer id, -1 for this device
     int seatToAct() const;                    // whose turn it is to do something
     void sendState();                         // host: full state to every guest
-    void handleMessage(int peer, const QVariantMap &message);
-    void assignSeat(int peer);
-    void releaseSeats(int peer);
     void setStatus(const QString &text);
 
     seuche::Game game_;

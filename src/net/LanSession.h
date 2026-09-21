@@ -68,14 +68,30 @@ private:
         qint64 lastSeen = 0;
     };
 
-    void acceptConnections();
     Peer* addPeer(QTcpSocket* socket);
     Peer* findPeer(int id);
     void removePeer(int id, bool notify);
     void readPeer(int id);
     void checkIdlePeers();
-    void answerDiscovery();
+    // Which peer a socket belongs to. The per peer slots below recover it from
+    // sender(), where the Qt 5 code captured it in a lambda.
+    int peerIdOf(QObject* socket) const;
     static void writeLine(QTcpSocket* socket, const QVariantMap& message);
+
+// Qt 4 has no pointer-to-member connect(), so everything a signal reaches must
+// be a real slot named in a SIGNAL()/SLOT() string. Declaring them as slots
+// costs Qt 5 nothing and keeps one source for both.
+private slots:
+    void acceptConnections();
+    void answerDiscovery();
+    void onPingTimeout();
+    void onConnectTimeout();
+    void onGuestConnected();
+    void onGuestSocketError();
+    void onPeerReadyRead();
+    void onPeerDisconnected();
+
+private:
 
     Role m_role = None;
     QString m_hostName;
@@ -117,11 +133,13 @@ signals:
     void hostsChanged();
     void searchingChanged();
 
-private:
-    bool ensureSocket();
+private slots:
     void sendProbes();
     void readReplies();
     void finish();
+
+private:
+    bool ensureSocket();
 
     QUdpSocket* m_socket = nullptr;
     QTimer m_timer;

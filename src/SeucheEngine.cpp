@@ -44,13 +44,25 @@ SeucheEngine::SeucheEngine(QObject *parent)
     : QObject(parent)
     , rng_(std::mt19937(std::random_device{}()))
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     connect(&session_, &LanSession::messageReceived, this, &SeucheEngine::handleMessage);
     connect(&session_, &LanSession::peerJoined, this, &SeucheEngine::assignSeat);
     connect(&session_, &LanSession::peerLost, this, &SeucheEngine::releaseSeats);
     connect(&session_, &LanSession::peerConnectedChanged, this, &SeucheEngine::netChanged);
-    connect(&session_, &LanSession::connectionFailed, this, [this](const QString &reason) {
-        setStatus(tr("Verbindung fehlgeschlagen: %1").arg(reason));
-    });
+    connect(&session_, &LanSession::connectionFailed, this, &SeucheEngine::onConnectionFailed);
+#else
+    connect(&session_, SIGNAL(messageReceived(int, QVariantMap)),
+            this, SLOT(handleMessage(int, QVariantMap)));
+    connect(&session_, SIGNAL(peerJoined(int)), this, SLOT(assignSeat(int)));
+    connect(&session_, SIGNAL(peerLost(int)), this, SLOT(releaseSeats(int)));
+    connect(&session_, SIGNAL(peerConnectedChanged()), this, SIGNAL(netChanged()));
+    connect(&session_, SIGNAL(connectionFailed(QString)), this, SLOT(onConnectionFailed(QString)));
+#endif
+}
+
+void SeucheEngine::onConnectionFailed(const QString &reason)
+{
+    setStatus(tr("Verbindung fehlgeschlagen: %1").arg(reason));
 }
 
 QString SeucheEngine::phase() const
@@ -787,8 +799,9 @@ bool SeucheEngine::playForecast(int seat, const QVariantList &order)
     play.event = Event::Forecast;
     play.fromRoleCard = !hasCard(game_.players[seat].hand, eventCard(Event::Forecast));
     // The page lists them in drawing order, the deck has its top at the back.
-    for (auto it = order.crbegin(); it != order.crend(); ++it)
-        play.order.push_back(City(std::uint8_t(it->toInt())));
+    // Counted backwards rather than with crbegin(), which Qt 4's QList lacks.
+    for (int i = order.size() - 1; i >= 0; --i)
+        play.order.push_back(City(std::uint8_t(order.at(i).toInt())));
 
     return applyEventPlay(play);
 }

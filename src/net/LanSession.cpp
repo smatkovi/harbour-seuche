@@ -82,7 +82,8 @@ QHostAddress routedAddress(const QString& outside)
 QHostAddress routedLocalAddress()
 {
     const QHostAddress address = routedAddress(QStringLiteral("8.8.8.8"));
-    if (address.protocol() != QAbstractSocket::IPv4Protocol || address.isLoopback())
+    if (address.protocol() != QAbstractSocket::IPv4Protocol
+        || address == QHostAddress(QHostAddress::LocalHost))
         return QHostAddress();
     return address;
 }
@@ -96,11 +97,30 @@ bool isGlobalIPv6(const QHostAddress& address)
     return (bytes[0] & 0xe0) == 0x20;
 }
 
+// Qt 4 knows no AnyIPv4; its sockets are IPv4 only, so Any means the same.
+QHostAddress anyIPv4()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return QHostAddress(QHostAddress::AnyIPv4);
+#else
+    return QHostAddress(QHostAddress::Any);
+#endif
+}
+
+// Strips the "::ffff:" of an IPv4 address that arrived over an IPv6 socket, so
+// what the user sees is the plain dotted form.
 QString plainAddress(const QHostAddress& address)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     bool ok = false;
     const quint32 ipv4 = address.toIPv4Address(&ok);
     return ok ? QHostAddress(ipv4).toString() : address.toString();
+#else
+    // Qt 4 has no out parameter here, and its sockets are IPv4 only anyway.
+    if (address.protocol() == QAbstractSocket::IPv4Protocol)
+        return QHostAddress(address.toIPv4Address()).toString();
+    return address.toString();
+#endif
 }
 
 } // namespace
@@ -113,19 +133,31 @@ LanSession::LanSession(QObject* parent)
     m_pingTimer.setInterval(kPingInterval);
     m_connectTimer.setSingleShot(true);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     connect(&m_server, &QTcpServer::newConnection, this, &LanSession::acceptConnections);
-    connect(&m_pingTimer, &QTimer::timeout, this, [this]() {
-        const QByteArray ping = QByteArrayLiteral("{\"t\":\"ping\"}\n");
-        for (const Peer& peer : m_peers)
-            peer.socket->write(ping);
-        checkIdlePeers();
-    });
-    connect(&m_connectTimer, &QTimer::timeout, this, [this]() {
-        if (m_role != Guest || peerConnected())
-            return;
-        stop();
-        emit connectionFailed(tr("No answer from that address"));
-    });
+    connect(&m_pingTimer, &QTimer::timeout, this, &LanSession::onPingTimeout);
+    connect(&m_connectTimer, &QTimer::timeout, this, &LanSession::onConnectTimeout);
+#else
+    connect(&m_server, SIGNAL(newConnection()), this, SLOT(acceptConnections()));
+    connect(&m_pingTimer, SIGNAL(timeout()), this, SLOT(onPingTimeout()));
+    connect(&m_connectTimer, SIGNAL(timeout()), this, SLOT(onConnectTimeout()));
+#endif
+}
+
+void LanSession::onPingTimeout()
+{
+    const QByteArray ping = QByteArrayLiteral("{\"t\":\"ping\"}\n");
+    for (const Peer& peer : m_peers)
+        peer.socket->write(ping);
+    checkIdlePeers();
+}
+
+void LanSession::onConnectTimeout()
+{
+    if (m_role != Guest || peerConnected())
+        return;
+    stop();
+    emit connectionFailed(tr("No answer from that address"));
 }
 
 LanSession::~LanSession()
@@ -152,13 +184,43 @@ bool LanSession::startHosting(const QString& hostName, int players, int maxPeers
     m_pingTimer.start();
 
     m_responder = new QUdpSocket(this);
-    if (m_responder->bind(QHostAddress(QHostAddress::AnyIPv4), DiscoveryPort,
+    if (m_responder->bind(anyIPv4(), DiscoveryPort,
                           QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         connect(m_responder, &QUdpSocket::readyRead, this, &LanSession::answerDiscovery);
+#else
+        connect(m_responder, SIGNAL(readyRead()), this, SLOT(answerDiscovery()));
+#endif
     }
     // A failed responder only disables automatic discovery; joining by
     // address still works, so hosting continues.
     return true;
+}
+
+// The socket that just connected or failed is the pending one; Qt 5 captured
+// it in the lambda, Qt 4 has to be told which object spoke.
+void LanSession::onGuestConnected()
+{
+    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket)
+        return;
+    m_connectTimer.stop();
+    m_pendingSocket = nullptr;
+    m_nextPeerId = 0;
+    addPeer(socket);
+    m_pingTimer.start();
+    emit peerJoined(0);
+    emit peerConnectedChanged();
+}
+
+void LanSession::onGuestSocketError()
+{
+    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket || !m_connectTimer.isActive() || peerConnected())
+        return;
+    const QString reason = socket->errorString();
+    stop();
+    emit connectionFailed(reason);
 }
 
 void LanSession::setAcceptingGuests(bool accepting)
@@ -173,27 +235,17 @@ void LanSession::joinHost(const QString& address)
     QTcpSocket* socket = new QTcpSocket(this);
     m_pendingSocket = socket;
     socket->setSocketOption(QAbstractSocket::LowDelayOption, 1);
-    connect(socket, &QTcpSocket::connected, this, [this, socket]() {
-        m_connectTimer.stop();
-        m_pendingSocket = nullptr;
-        m_nextPeerId = 0;
-        addPeer(socket);
-        m_pingTimer.start();
-        emit peerJoined(0);
-        emit peerConnectedChanged();
-    });
-    auto onError = [this, socket](QAbstractSocket::SocketError) {
-        if (!m_connectTimer.isActive() || peerConnected())
-            return;
-        const QString reason = socket->errorString();
-        stop();
-        emit connectionFailed(reason);
-    };
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-    connect(socket, &QAbstractSocket::errorOccurred, this, onError);
-#else
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    connect(socket, &QTcpSocket::connected, this, &LanSession::onGuestConnected);
+#  if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    connect(socket, &QAbstractSocket::errorOccurred, this, &LanSession::onGuestSocketError);
+#  else
     connect(socket, static_cast<void (QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error),
-            this, onError);
+            this, &LanSession::onGuestSocketError);
+#  endif
+#else
+    connect(socket, SIGNAL(connected()), this, SLOT(onGuestConnected()));
+    connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onGuestSocketError()));
 #endif
     m_connectTimer.start(kConnectTimeout);
     socket->connectToHost(normalizeAddress(address), GamePort);
@@ -262,7 +314,11 @@ void LanSession::dropPeer(int peer)
         QTcpSocket* socket = m_peers[i].socket;
         m_peers.removeAt(i);
         socket->disconnect(this);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+#else
+        connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+#endif
         socket->disconnectFromHost();
         if (socket->state() == QAbstractSocket::UnconnectedState)
             socket->deleteLater();
@@ -334,7 +390,11 @@ void LanSession::acceptConnections()
             busy.insert(QStringLiteral("t"), QStringLiteral("busy"));
             writeLine(socket, busy);
             socket->disconnectFromHost();
-            connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+    #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+#else
+        connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+#endif
             continue;
         }
         socket->setSocketOption(QAbstractSocket::LowDelayOption, 1);
@@ -351,15 +411,38 @@ LanSession::Peer* LanSession::addPeer(QTcpSocket* socket)
     peer.socket = socket;
     peer.lastSeen = QDateTime::currentMSecsSinceEpoch();
     socket->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
-    const int id = peer.id;
-    connect(socket, &QTcpSocket::readyRead, this, [this, id]() { readPeer(id); });
-    connect(socket, &QTcpSocket::disconnected, this, [this, id]() {
-        if (!findPeer(id))
-            return;
-        removePeer(id, true);
-    });
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    connect(socket, &QTcpSocket::readyRead, this, &LanSession::onPeerReadyRead);
+    connect(socket, &QTcpSocket::disconnected, this, &LanSession::onPeerDisconnected);
+#else
+    connect(socket, SIGNAL(readyRead()), this, SLOT(onPeerReadyRead()));
+    connect(socket, SIGNAL(disconnected()), this, SLOT(onPeerDisconnected()));
+#endif
     m_peers.append(peer);
     return &m_peers.last();
+}
+
+int LanSession::peerIdOf(QObject* socket) const
+{
+    for (int i = 0; i < m_peers.size(); ++i) {
+        if (m_peers[i].socket == socket)
+            return m_peers[i].id;
+    }
+    return -1;
+}
+
+void LanSession::onPeerReadyRead()
+{
+    const int id = peerIdOf(sender());
+    if (id >= 0)
+        readPeer(id);
+}
+
+void LanSession::onPeerDisconnected()
+{
+    const int id = peerIdOf(sender());
+    if (id >= 0)
+        removePeer(id, true);
 }
 
 LanSession::Peer* LanSession::findPeer(int id)
@@ -459,8 +542,13 @@ LanBrowser::LanBrowser(QObject* parent)
     m_timer.setInterval(600);
     m_finishTimer.setSingleShot(true);
     m_finishTimer.setInterval(900);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     connect(&m_timer, &QTimer::timeout, this, &LanBrowser::sendProbes);
     connect(&m_finishTimer, &QTimer::timeout, this, &LanBrowser::finish);
+#else
+    connect(&m_timer, SIGNAL(timeout()), this, SLOT(sendProbes()));
+    connect(&m_finishTimer, SIGNAL(timeout()), this, SLOT(finish()));
+#endif
 }
 
 LanBrowser::~LanBrowser()
@@ -474,12 +562,16 @@ bool LanBrowser::ensureSocket()
     if (m_socket)
         return true;
     m_socket = new QUdpSocket(this);
-    if (!m_socket->bind(QHostAddress(QHostAddress::AnyIPv4), 0)) {
+    if (!m_socket->bind(anyIPv4(), 0)) {
         m_socket->deleteLater();
         m_socket = nullptr;
         return false;
     }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     connect(m_socket, &QUdpSocket::readyRead, this, &LanBrowser::readReplies);
+#else
+    connect(m_socket, SIGNAL(readyRead()), this, SLOT(readReplies()));
+#endif
     return true;
 }
 
