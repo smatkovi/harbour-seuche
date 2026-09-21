@@ -13,6 +13,7 @@
 #include <QVariant>
 
 #include <cstdio>
+#include <vector>
 
 static int failures = 0;
 
@@ -42,6 +43,134 @@ static QVariant evaluate(QQmlEngine *qml, const QString &expression)
     const QVariant value = object->property("value");
     delete object;
     return value;
+}
+
+
+// Every event card played the way EventPage.qml plays it: the page hands the
+// facade plain integers and lets it work out the EventPlay. That translation --
+// city id to City, seat to pawn, and whether the card comes off the role card
+// -- had no test at all, and it is exactly where an event card that cannot be
+// carried out would come from.
+//
+// The deal is seeded from the clock, so rather than building a position this
+// plays games until every one of the five events has been through the facade.
+static void exerciseEvents()
+{
+    const int kinds = seuche::kBaseEvents;
+    std::vector<int> played(kinds, 0);
+    std::vector<int> refused(kinds, 0);
+
+    for (int game = 0; game < 200; ++game) {
+        bool missing = false;
+        for (int e = 0; e < kinds; ++e)
+            missing = missing || played[e] == 0;
+        if (!missing)
+            break;
+
+        SeucheEngine engine;
+        engine.newGame(4, 1);
+
+        int steps = 0;
+        while (!engine.over() && steps++ < 4000) {
+            const QVariantList cards = engine.eventCards();
+            for (const QVariant &card : cards) {
+                const QVariantMap entry = card.toMap();
+                const int seat = entry.value(QStringLiteral("seat")).toInt();
+                const int event = entry.value(QStringLiteral("event")).toInt();
+                const QString needs = entry.value(QStringLiteral("needs")).toString();
+                if (event < 0 || event >= kinds)
+                    continue;
+
+                bool ok = false;
+                if (needs.isEmpty()) {
+                    ok = engine.playEvent(seat, event, -1, -1);
+                } else if (needs == QLatin1String("city")) {
+                    // Sonderbudget: a city that has no station yet.
+                    for (const QVariant &city : engine.cities()) {
+                        const QVariantMap c = city.toMap();
+                        if (c.value(QStringLiteral("station")).toBool())
+                            continue;
+                        ok = engine.playEvent(seat, event,
+                                              c.value(QStringLiteral("id")).toInt(), -1);
+                        if (ok)
+                            break;
+                    }
+                } else if (needs == QLatin1String("pawn")) {
+                    // Lufttransport: someone, somewhere else.
+                    const QVariantList seats = engine.players();
+                    const int here = seats[0].toMap().value(QStringLiteral("city")).toInt();
+                    for (const QVariant &city : engine.cities()) {
+                        const int id = city.toMap().value(QStringLiteral("id")).toInt();
+                        if (id == here)
+                            continue;
+                        ok = engine.playEvent(seat, event, id, 0);
+                        if (ok)
+                            break;
+                    }
+                } else if (needs == QLatin1String("infection")) {
+                    const QVariantList discard = engine.infectionDiscard();
+                    if (!discard.isEmpty())
+                        ok = engine.playEvent(seat, event,
+                                              discard[0].toMap().value(QStringLiteral("id")).toInt(),
+                                              -1);
+                } else if (needs == QLatin1String("forecast")) {
+                    const QVariantList top = engine.forecastCards();
+                    if (top.size() == 6) {
+                        QVariantList order;
+                        for (int i = int(top.size()) - 1; i >= 0; --i)
+                            order.append(top[i].toMap().value(QStringLiteral("id")));
+                        ok = engine.playForecast(seat, order);
+                    }
+                }
+
+                if (ok) {
+                    ++played[event];
+                    // The card has to be gone: off the hand, or off the role card.
+                    const QVariantMap holder = engine.players()[seat].toMap();
+                    bool stillHeld = false;
+                    for (const QVariant &held : holder.value(QStringLiteral("hand")).toList()) {
+                        if (held.toMap().value(QStringLiteral("id")).toInt()
+                            == seuche::kEventBase + event)
+                            stillHeld = true;
+                    }
+                    check(!stillHeld, QStringLiteral("a played event card leaves the hand"));
+                } else {
+                    ++refused[event];
+                }
+                break;   // the list is stale once something was played
+            }
+
+            const QString phase = engine.phase();
+            if (phase == QLatin1String("actions")) {
+                const QVariantList actions = engine.allActions();
+                if (actions.isEmpty())
+                    break;
+                engine.run(actions[steps % actions.size()].toMap()
+                               .value(QStringLiteral("index")).toInt());
+            } else if (phase == QLatin1String("draw")) {
+                engine.drawCard();
+            } else if (phase == QLatin1String("discard")) {
+                const int seat = engine.discardingSeat();
+                const QVariantList hand = engine.players()[seat].toMap()
+                                              .value(QStringLiteral("hand")).toList();
+                if (hand.isEmpty())
+                    break;
+                engine.discardCard(hand[0].toMap().value(QStringLiteral("id")).toInt());
+            } else if (phase == QLatin1String("infect")) {
+                engine.infectCity();
+            } else {
+                break;
+            }
+        }
+    }
+
+    for (int e = 0; e < kinds; ++e) {
+        check(played[e] > 0,
+              QStringLiteral("event %1 (%2) was never carried out through the facade")
+                  .arg(e).arg(QString::fromUtf8(seuche::eventName(seuche::Event(e)))));
+        std::printf("  %-22s gespielt %3d, abgelehnt %3d\n",
+                    seuche::eventName(seuche::Event(e)), played[e], refused[e]);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -239,6 +368,9 @@ int main(int argc, char *argv[])
     check(engine.over(), QStringLiteral("the game reached an end"));
     check(!engine.outcomeText().isEmpty(), QStringLiteral("the end has a text"));
     check(!engine.journal().isEmpty(), QStringLiteral("the journal recorded it"));
+
+    std::printf("Ereigniskarten durch die Fassade:\n");
+    exerciseEvents();
 
     std::printf(failures == 0 ? "all qml bridge checks passed\n" : "%d qml bridge checks failed\n",
                 failures);

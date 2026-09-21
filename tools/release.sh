@@ -1,7 +1,11 @@
 #!/bin/sh
-# Publish RPMs as a release of this repository.
+# Publish the packages of a version as a release of this repository.
 #
-#   tools/release.sh <version> <rpm> [<rpm> ...]
+#   tools/release.sh <version> <package> [<package> ...]
+#
+# Any package file goes: the two Sailfish RPMs, and the Harmattan .deb for the
+# Nokia N9 once it is built. Running it again with more files adds them to the
+# release that is already there.
 #
 # gh is logged in on the Arch machine, so the files go there first. A copy also
 # lands in ~/ps/rpms/seuche/, like the other apps keep theirs.
@@ -41,7 +45,9 @@ NOTES=$(mktemp)
 cat > "$NOTES" <<NOTE
 Seuche $VERSION
 
-RPM für Sailfish OS. Regelstand siehe \`spec/regeln.md\`.
+Pakete für Sailfish OS (\`.rpm\`, aarch64 und armv7hl) und, sobald gebaut,
+für MeeGo Harmattan auf dem Nokia N9 (\`.deb\`, armel).
+Regelstand siehe \`spec/regeln.md\`.
 NOTE
 
 ssh "$HOST" "rm -rf $WORK && mkdir -p $WORK"
@@ -49,10 +55,17 @@ scp "$@" "$NOTES" "$HOST:$WORK/"
 rm -f "$NOTES"
 NOTENAME=$(basename "$NOTES")
 
+# Exactly the files that were handed in — a glob here would quietly drop the
+# .deb and upload only the RPMs.
+NAMES=""
+for FILE in "$@"; do
+    NAMES="$NAMES $(basename "$FILE")"
+done
+
 ssh "$HOST" "cd $WORK && \
     if gh release view $TAG --repo $REPO >/dev/null 2>&1; then \
-        gh release upload $TAG *.rpm --repo $REPO --clobber; \
+        gh release upload $TAG$NAMES --repo $REPO --clobber; \
     else \
-        gh release create $TAG *.rpm --repo $REPO --title 'Seuche $VERSION' --notes-file $NOTENAME; \
+        gh release create $TAG$NAMES --repo $REPO --title 'Seuche $VERSION' --notes-file $NOTENAME; \
     fi"
 echo "released $TAG to $REPO, copy in ~/ps/rpms/seuche/"

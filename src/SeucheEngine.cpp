@@ -736,6 +736,12 @@ bool SeucheEngine::applyEventPlay(const EventPlay &play)
         return false;
     }
     note(text);
+    // Die Prognose deckt die obersten sechs Infektionskarten auf. Wer sie
+    // zurücknehmen könnte, hätte die Karte wieder auf der Hand und wüsste
+    // trotzdem, was oben liegt — also endet hier das Zurücknehmen, genau wie
+    // beim Ziehen einer Spielerkarte.
+    if (play.event == Event::Forecast)
+        clearUndo();
     refresh();
     sendState();
     return true;

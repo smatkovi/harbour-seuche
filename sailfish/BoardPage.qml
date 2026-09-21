@@ -137,6 +137,11 @@ Page {
             }
 
             // --- Hand der Person am Zug -----------------------------------
+            //
+            // Die Karten sind antippbar, denn am Tisch denkt man in Karten und
+            // nicht in Städten auf dem Plan: eine Stadtkarte öffnet die
+            // Aktionen für ihre Stadt (dort steht dann auch der Direktflug),
+            // eine Ereigniskarte die Ereignisseite.
             Flow {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
@@ -146,18 +151,34 @@ Page {
                     model: engine.players.length > 0 ? engine.players[engine.atTurn].hand : []
 
                     delegate: Rectangle {
+                        id: card
+                        property var entry: modelData
                         height: Theme.itemSizeExtraSmall * 0.5
                         width: cardLabel.width + Theme.paddingMedium
                         radius: 4
-                        color: modelData.colour >= 0 ? Style.colourOf(modelData.colour)
-                                                     : Theme.secondaryHighlightColor
+                        color: entry.colour >= 0 ? Style.colourOf(entry.colour)
+                                                 : Theme.secondaryHighlightColor
+                        opacity: cardArea.pressed ? 0.6 : 1.0
 
                         Label {
                             id: cardLabel
                             anchors.centerIn: parent
                             font.pixelSize: Theme.fontSizeExtraSmall
                             color: "#101010"
-                            text: modelData.label
+                            text: card.entry.label
+                        }
+
+                        MouseArea {
+                            id: cardArea
+                            anchors.fill: parent
+                            anchors.margins: -Theme.paddingSmall / 2
+                            onClicked: {
+                                if (card.entry.event)
+                                    pageStack.push(Qt.resolvedUrl("EventPage.qml"))
+                                else
+                                    pageStack.push(Qt.resolvedUrl("ActionPage.qml"),
+                                                   { cityId: card.entry.id })
+                            }
                         }
                     }
                 }
@@ -176,7 +197,10 @@ Page {
                 wrapMode: Text.WordWrap
                 visible: engine.awaitingTurnEnd
                 color: Theme.highlightColor
-                text: qsTr("Alle vier Aktionen gespielt — Zug beenden?")
+                // Die Aktionsphase endet nach der vierten Aktion von selbst,
+                // aber auch wenn jemand vorher „Zug beenden" wählt — der Text
+                // passt deshalb auf beides.
+                text: qsTr("Zug beenden? Rückgängig geht noch.")
             }
 
             Row {
