@@ -146,6 +146,67 @@ int main(int argc, char *argv[])
         }
     }
 
+    // --- undo, and the question after the fourth action -------------------
+    check(evaluate(&qml, QStringLiteral("engine.canUndo")).isValid(),
+          QStringLiteral("engine.canUndo is undefined"));
+    check(evaluate(&qml, QStringLiteral("engine.undoText")).isValid(),
+          QStringLiteral("engine.undoText is undefined"));
+    check(evaluate(&qml, QStringLiteral("engine.awaitingTurnEnd")).isValid(),
+          QStringLiteral("engine.awaitingTurnEnd is undefined"));
+    check(evaluate(&qml, QStringLiteral("engine.players[0].roleId")).isValid(),
+          QStringLiteral("players carry a roleId, which is what colours the pawn"));
+
+    {
+        const auto runFirst = [&]() {
+            const QVariantList actions = engine.allActions();
+            if (actions.isEmpty())
+                return false;
+            return engine.run(actions[0].toMap().value(QStringLiteral("index")).toInt());
+        };
+
+        check(!engine.canUndo(), QStringLiteral("nothing to take back before the first move"));
+        check(engine.undoText().isEmpty(), QStringLiteral("and nothing to name either"));
+
+        const int before = engine.actionsLeft();
+        const int seat = engine.atTurn();
+        const int city = engine.players()[seat].toMap().value(QStringLiteral("city")).toInt();
+        check(runFirst(), QStringLiteral("the first action runs"));
+        check(engine.canUndo(), QStringLiteral("an action can be taken back"));
+        check(!engine.undoText().isEmpty(), QStringLiteral("undo names the move it would undo"));
+        check(engine.actionsLeft() == before - 1, QStringLiteral("the action was spent"));
+        check(engine.undo(), QStringLiteral("undo runs"));
+        check(engine.actionsLeft() == before, QStringLiteral("the action came back"));
+        check(engine.atTurn() == seat, QStringLiteral("the same seat is at turn again"));
+        check(engine.players()[seat].toMap().value(QStringLiteral("city")).toInt() == city,
+              QStringLiteral("the pawn stands where it stood"));
+        check(!engine.canUndo(), QStringLiteral("one action taken back, nothing left"));
+
+        // Play the turn out. The action phase ends by itself, but nothing has
+        // been turned face up, so the whole turn is still reversible -- that is
+        // what lets the board page ask whether the turn is really over.
+        for (int i = 0; i < seuche::kActionsPerTurn; ++i) {
+            if (engine.phase() != QLatin1String("actions"))
+                break;
+            check(runFirst(), QStringLiteral("action %1 of the turn runs").arg(i + 1));
+        }
+        if (engine.phase() == QLatin1String("draw")) {
+            check(engine.awaitingTurnEnd(),
+                  QStringLiteral("after the fourth action the page asks whether the turn is over"));
+            check(engine.canUndo(), QStringLiteral("the fourth action is still reversible"));
+            check(engine.undo(), QStringLiteral("answering no takes the action back"));
+            check(engine.phase() == QLatin1String("actions"),
+                  QStringLiteral("and puts the turn back into the action phase"));
+            check(engine.actionsLeft() == 1, QStringLiteral("with the fourth action in hand again"));
+            check(!engine.awaitingTurnEnd(), QStringLiteral("the question is gone"));
+
+            // Play it again and draw: the card is seen, and that is final.
+            check(runFirst(), QStringLiteral("the fourth action runs a second time"));
+            engine.drawCard();
+            check(!engine.canUndo(), QStringLiteral("a drawn card closes the undo window"));
+            check(!engine.awaitingTurnEnd(), QStringLiteral("and the question with it"));
+        }
+    }
+
     // a whole game through the very calls the pages make
     int steps = 0;
     while (!engine.over() && steps++ < 20000) {

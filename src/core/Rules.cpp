@@ -459,6 +459,11 @@ Reason apply(Game& game, const Action& action, std::mt19937& rng)
     return Reason::Ok;
 }
 
+// Every action handed out here is complete: the pawn is named even where it
+// could only be the player at turn, and an action that spends a card carries
+// that card. check() and apply() would manage without -- they derive both from
+// the game -- but the UI, the log and the network protocol all read the Action
+// on its own, and a half filled one silently turns into a different move.
 std::vector<Action> legalActions(const Game& game)
 {
     std::vector<Action> actions;
@@ -494,6 +499,7 @@ std::vector<Action> legalActions(const Game& game)
             direct.kind = ActionKind::DirectFlight;
             direct.pawn = pawn;
             direct.target = card.city();
+            direct.card = card;
             offer(direct);
         }
         if (hasCard(player.hand, cityCard(from))) {
@@ -502,6 +508,7 @@ std::vector<Action> legalActions(const Game& game)
                 charter.kind = ActionKind::CharterFlight;
                 charter.pawn = pawn;
                 charter.target = City(static_cast<std::uint8_t>(id));
+                charter.card = cityCard(from);
                 offer(charter);
             }
         }
@@ -532,6 +539,9 @@ std::vector<Action> legalActions(const Game& game)
     {
         Action build;
         build.kind = ActionKind::BuildStation;
+        build.pawn = game.atTurn;
+        if (player.role != Role::Operations)
+            build.card = cityCard(player.city);
         offer(build);
         if (game.stationCount() >= kStations) {
             for (int id = 0; id < kCities; ++id) {
@@ -546,6 +556,7 @@ std::vector<Action> legalActions(const Game& game)
     for (int colour = 0; colour < game.colourCount(); ++colour) {
         Action treat;
         treat.kind = ActionKind::Treat;
+        treat.pawn = game.atTurn;
         treat.colour = Colour(colour);
         offer(treat);
     }
@@ -556,6 +567,7 @@ std::vector<Action> legalActions(const Game& game)
         for (PlayerCard card : player.hand) {
             Action give;
             give.kind = ActionKind::ShareGive;
+            give.pawn = game.atTurn;
             give.otherSeat = static_cast<std::uint8_t>(other);
             give.card = card;
             offer(give);
@@ -563,6 +575,7 @@ std::vector<Action> legalActions(const Game& game)
         for (PlayerCard card : game.players[other].hand) {
             Action take;
             take.kind = ActionKind::ShareTake;
+            take.pawn = game.atTurn;
             take.otherSeat = static_cast<std::uint8_t>(other);
             take.card = card;
             offer(take);
@@ -573,6 +586,7 @@ std::vector<Action> legalActions(const Game& game)
     for (int colour = 0; colour < game.colourCount(); ++colour) {
         Action cure;
         cure.kind = ActionKind::DiscoverCure;
+        cure.pawn = game.atTurn;
         cure.colour = Colour(colour);
         for (PlayerCard card : player.hand) {
             if (card.isCity() && card.colour() == Colour(colour)
@@ -589,6 +603,7 @@ std::vector<Action> legalActions(const Game& game)
             for (int id = 0; id < kCities; ++id) {
                 Action flight;
                 flight.kind = ActionKind::OperationsFlight;
+                flight.pawn = game.atTurn;
                 flight.card = card;
                 flight.target = City(static_cast<std::uint8_t>(id));
                 offer(flight);
@@ -600,6 +615,7 @@ std::vector<Action> legalActions(const Game& game)
         for (PlayerCard card : game.playerDiscard) {
             Action take;
             take.kind = ActionKind::PlannerTake;
+            take.pawn = game.atTurn;
             take.card = card;
             offer(take);
         }
@@ -607,6 +623,7 @@ std::vector<Action> legalActions(const Game& game)
 
     Action pass;
     pass.kind = ActionKind::Pass;
+    pass.pawn = game.atTurn;
     offer(pass);
     return actions;
 }

@@ -40,11 +40,11 @@ target_link_libraries(harbour-seuche
 # The QML is not compiled in: rpm/harbour-seuche.spec copies sailfish/*.qml and
 # sailfish/qmldir into /usr/share/harbour-seuche/qml.
 
-# The two core test programs, the same ones tools/test.sh builds by hand.
+# The core test programs, the same ones tools/test.sh builds by hand.
 option(SEUCHE_BUILD_TESTS "Build the rule core tests" OFF)
 if(SEUCHE_BUILD_TESTS)
     enable_testing()
-    foreach(t test_model test_rules)
+    foreach(t test_model test_rules test_play)
         add_executable(${t} tests/${t}.cpp ${SEUCHE_CORE_SOURCES})
         target_include_directories(${t} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
         add_test(NAME ${t} COMMAND ${t})

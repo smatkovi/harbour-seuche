@@ -39,9 +39,20 @@ Page {
             property bool mine: engine.mySeats.indexOf(modelData.seat) >= 0
             enabled: !engine.rolesLocked && mine
 
-            Column {
+            Rectangle {
                 x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                anchors.verticalCenter: parent.verticalCenter
+                width: Theme.fontSizeLarge
+                height: width
+                radius: width / 2
+                color: Style.roleColourOf(modelData.roleId)
+                border.width: 1
+                border.color: Qt.rgba(0, 0, 0, 0.65)
+            }
+
+            Column {
+                x: Theme.horizontalPageMargin + Theme.fontSizeLarge + Theme.paddingMedium
+                width: parent.width - x - Theme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
 
                 Label {
@@ -60,14 +71,17 @@ Page {
                 }
             }
 
-            onClicked: pageStack.push(Qt.resolvedUrl("PickPage.qml"), {
-                title: qsTr("Rolle für Sitz %1").arg(modelData.seat + 1),
-                entries: engine.freeRoles(modelData.seat),
-                onPicked: function (roleId) {
-                    engine.chooseRole(modelData.seat, roleId)
+            onClicked: {
+                var seat = modelData.seat
+                var picker = pageStack.push(Qt.resolvedUrl("PickPage.qml"), {
+                    title: qsTr("Rolle für Sitz %1").arg(seat + 1),
+                    entries: engine.freeRoles(seat)
+                })
+                picker.picked.connect(function (roleId) {
+                    engine.chooseRole(seat, roleId)
                     pageStack.pop()
-                }
-            })
+                })
+            }
         }
 
         footer: Column {

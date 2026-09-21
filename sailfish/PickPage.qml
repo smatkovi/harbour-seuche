@@ -11,13 +11,26 @@ import "."
 
 // A plain chooser for cities, seats, infection cards or roles. `entries` is a
 // list of maps; the caller gets back whichever number identifies the entry.
+//
+// The answer comes back as a signal, and callers connect to it on the page
+// object that push() returns:
+//
+//     var picker = pageStack.push(Qt.resolvedUrl("PickPage.qml"), { ... })
+//     picker.picked.connect(function (value) { ... })
+//
+// It used to be a `property var onPicked` filled in from push()'s property
+// table instead. That table travels as a QVariantMap, a JavaScript function
+// does not survive the trip, and the property stayed null -- so every chooser
+// simply did nothing when tapped, which took out the event cards that need a
+// target and the role picker with them.
 Page {
     id: page
     allowedOrientations: Orientation.All
 
     property string title: ""
     property var entries: []
-    property var onPicked: null
+
+    signal picked(int value)
 
     function labelOf(entry) {
         return entry.name !== undefined ? entry.name : entry.role
@@ -70,10 +83,7 @@ Page {
                 }
             }
 
-            onClicked: {
-                if (page.onPicked)
-                    page.onPicked(page.valueOf(modelData))
-            }
+            onClicked: page.picked(page.valueOf(modelData))
         }
 
         VerticalScrollDecorator { }

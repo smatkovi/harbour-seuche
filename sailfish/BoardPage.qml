@@ -35,6 +35,11 @@ Page {
                 onClicked: page.toMainPage()
             }
             MenuItem {
+                text: qsTr("Rückgängig: %1").arg(engine.undoText)
+                visible: engine.canUndo && engine.mayAct
+                onClicked: engine.undo()
+            }
+            MenuItem {
                 text: qsTr("Protokoll")
                 onClicked: pageStack.push(Qt.resolvedUrl("LogPage.qml"))
             }
@@ -159,6 +164,21 @@ Page {
             }
 
             // --- worauf die Phase wartet ----------------------------------
+            //
+            // Nach der vierten Aktion endet die Aktionsphase von selbst. Bevor
+            // die erste Karte aufgedeckt wird — und damit das Zurücknehmen
+            // endgültig vorbei ist — wird hier gefragt, ob der Zug wirklich
+            // vorbei sein soll.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                visible: engine.awaitingTurnEnd
+                color: Theme.highlightColor
+                text: qsTr("Alle vier Aktionen gespielt — Zug beenden?")
+            }
+
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: Theme.paddingMedium
@@ -172,8 +192,14 @@ Page {
                 Button {
                     visible: engine.phase === "draw"
                     enabled: engine.mayAct
-                    text: qsTr("Karte ziehen (%1)").arg(engine.drawsLeft)
+                    text: engine.awaitingTurnEnd ? qsTr("Ja, Karten ziehen")
+                                                 : qsTr("Karte ziehen (%1)").arg(engine.drawsLeft)
                     onClicked: engine.drawCard()
+                }
+                Button {
+                    visible: engine.canUndo && engine.mayAct
+                    text: engine.awaitingTurnEnd ? qsTr("Nein, zurück") : qsTr("Rückgängig")
+                    onClicked: engine.undo()
                 }
                 Button {
                     visible: engine.phase === "discard"

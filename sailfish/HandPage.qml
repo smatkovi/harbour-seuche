@@ -40,8 +40,27 @@ Page {
                     property var player: modelData
                     property bool discarding: engine.discardingSeat === modelData.seat
 
-                    SectionHeader {
-                        text: player.role + (player.atTurn ? qsTr(" — am Zug") : "")
+                    Item {
+                        width: parent.width
+                        height: heading.height
+
+                        SectionHeader {
+                            id: heading
+                            text: player.role + (player.atTurn ? qsTr(" — am Zug") : "")
+                        }
+
+                        // dieselbe Farbe wie die Figur auf dem Spielplan
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.horizontalPageMargin
+                            anchors.verticalCenter: heading.verticalCenter
+                            width: Theme.fontSizeMedium
+                            height: width
+                            radius: width / 2
+                            color: Style.roleColourOf(player.roleId)
+                            border.width: 1
+                            border.color: Qt.rgba(0, 0, 0, 0.65)
+                        }
                     }
 
                     Label {

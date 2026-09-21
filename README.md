@@ -10,13 +10,21 @@ Grafik, Rollen- und Ereignisbezeichnungen sowie alle Texte sind eigenständig.
 |---|---|
 | Regelwerk, Spielplan, Datenmodell | `spec/` — fertig |
 | Regelkern (`src/core`) | Aufbau, Aktionen, Ziehen, Epidemie, Infektion, Ausbrüche, Sieg/Niederlage — fertig und getestet |
-| App (Silica/QML) | spielbar: Spielplan mit Landkarte und Zoom (klein und formatfüllend), Aktionen je Stadt, Rollenwahl, Handkarten, Ereigniskarten, Protokoll |
+| App (Silica/QML) | spielbar: Spielplan mit Landkarte und Zoom (klein und formatfüllend), Aktionen je Stadt, Rollenwahl mit fester Farbe je Rolle, Handkarten, Ereigniskarten, Rückgängig, Protokoll |
 | LAN (`spec/netz.md`) | 2–4 Geräte im WLAN: Gastgeber hält die Partie, Gäste spiegeln sie |
 | Erweiterungsmodule | vorgesehen, nicht implementiert (`spec/regeln.md`, §10) |
 
 Computergegner sind **nicht** geplant: Das Spiel ist kooperativ, alle Sitze werden
 an einem Gerät gesteuert. Beim Start wird gewählt, wie viele Personen mitspielen
-(2–4); die Rollen werden zufällig gezogen.
+(2–4). Die Rollen werden zufällig gezogen und lassen sich anschließend auf der
+Rollenseite frei tauschen, solange die Partie noch nicht begonnen hat; jede Rolle
+hat ihre eigene Farbe und die Figur auf dem Spielplan trägt sie.
+
+Ein Zug lässt sich zurücknehmen, solange noch keine Karte aufgedeckt wurde: nach
+der vierten Aktion fragt die Spielseite, ob der Zug wirklich vorbei ist, und bis
+dahin führt **Rückgängig** Schritt für Schritt zurück. Sobald die erste Karte
+gezogen ist, ist der Zug endgültig — in einem kooperativen Spiel wäre alles
+andere ein Blick in die Zukunft.
 
 ## Aufbau
 
@@ -28,7 +36,8 @@ src/       SeucheEngine — die QML-Brücke, und main.cpp
 src/net/   LAN-Transport (aus harbour-snapszer) und Drahtformat
 sailfish/  Silica-Oberfläche, Symbole, Desktop-Datei
 rpm/       Paketbeschreibung
-tests/     vier Testprogramme ohne Framework
+tests/     fünf Testprogramme ohne Framework, darunter test_play.cpp, das
+           tausende vollständige Partien durchspielt
 tools/     Bauen (build.sh), Testen (test.sh), Symbol (make_icon.py),
            Landhintergrund (make_world.py), Veröffentlichen (release.sh)
 ```

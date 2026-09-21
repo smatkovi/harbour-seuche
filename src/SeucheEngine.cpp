@@ -285,6 +285,7 @@ QVariantList SeucheEngine::players() const
         QVariantMap entry;
         entry[QStringLiteral("seat")] = seat;
         entry[QStringLiteral("role")] = QString::fromUtf8(roleName(player.role));
+        entry[QStringLiteral("roleId")] = int(player.role);
         entry[QStringLiteral("ability")] = QString::fromUtf8(roleAbility(player.role));
         entry[QStringLiteral("city")] = int(player.city.id);
         entry[QStringLiteral("cityName")] = cityName(player.city.id);
@@ -329,6 +330,7 @@ void SeucheEngine::newGame(int seats, int difficulty)
     running_ = true;
     journal_.clear();
     rolesLocked_ = false;
+    clearUndo();
     note(tr("Neue Partie: %1 Personen").arg(options.players));
     if (isHost()) {
         seatOwner_.assign(options.players, -1);
@@ -453,14 +455,78 @@ bool SeucheEngine::run(int index)
     return applyAction(action);
 }
 
+// --- undo -------------------------------------------------------------------
+
+bool SeucheEngine::pushUndo(const QString &what)
+{
+    if (!running_ || isGuest())
+        return false;
+    Snapshot snapshot;
+    snapshot.game = game_;
+    snapshot.rng = rng_;
+    snapshot.journal = journal_;
+    snapshot.what = what;
+    undo_.push_back(std::move(snapshot));
+    // A turn is four actions plus whatever events and discards come with them;
+    // well under this. The cap is only there so a long turn cannot grow without
+    // bound on a phone.
+    if (undo_.size() > 32)
+        undo_.erase(undo_.begin());
+    return true;
+}
+
+void SeucheEngine::clearUndo()
+{
+    undo_.clear();
+}
+
+bool SeucheEngine::canUndo() const
+{
+    return running_ && !isGuest() && !undo_.empty();
+}
+
+QString SeucheEngine::undoText() const
+{
+    return undo_.empty() ? QString() : undo_.back().what;
+}
+
+bool SeucheEngine::awaitingTurnEnd() const
+{
+    return running_ && !game_.over() && game_.phase == Phase::Draw
+        && game_.drawsLeft == kDrawsPerTurn && !undo_.empty() && mayAct();
+}
+
+bool SeucheEngine::undo()
+{
+    if (!canUndo())
+        return false;
+
+    const Snapshot snapshot = undo_.back();
+    undo_.pop_back();
+    game_ = snapshot.game;
+    rng_ = snapshot.rng;
+    journal_ = snapshot.journal;
+    note(tr("Zurückgenommen: %1").arg(snapshot.what));
+    refresh();
+    sendState();          // the guests mirror the state, so they simply follow
+    return true;
+}
+
 bool SeucheEngine::applyAction(const Action &action)
 {
     rolesLocked_ = true;
     const QString text = label(action);
     const int outbreaksBefore = game_.outbreaks;
 
-    if (apply(game_, action, rng_) != Reason::Ok)
+    const bool stored = pushUndo(text);
+    const Reason reason = apply(game_, action, rng_);
+    if (reason != Reason::Ok) {
+        if (stored)
+            undo_.pop_back();
+        note(tr("Nicht möglich: %1").arg(QString::fromUtf8(reasonText(reason))));
+        refresh();
         return false;
+    }
 
     note(text);
     if (game_.outbreaks > outbreaksBefore)
@@ -489,6 +555,8 @@ void SeucheEngine::drawCard()
 void SeucheEngine::applyDraw()
 {
     rolesLocked_ = true;
+    // From here on the turn cannot be taken back: a card has been seen.
+    clearUndo();
 
     const int before = int(game_.playerDeck.size());
     const PlayerCard top = before > 0 ? game_.playerDeck.back() : PlayerCard();
@@ -530,6 +598,7 @@ void SeucheEngine::infectCity()
 void SeucheEngine::applyInfect()
 {
     rolesLocked_ = true;
+    clearUndo();
 
     const City next = game_.infectionDeck.empty() ? City() : game_.infectionDeck.back();
     const int outbreaksBefore = game_.outbreaks;
@@ -565,9 +634,16 @@ bool SeucheEngine::applyDiscardCard(int seat, int cardId)
 {
     if (!running_ || game_.phase != Phase::Discard || seat != game_.discardingPlayer)
         return false;
-    if (discard(game_, seat, PlayerCard(std::uint8_t(cardId))) != Reason::Ok)
+    const QString text = tr("Abgeworfen: %1").arg(cardLabel(cardId));
+    // Only reversible while the discard was forced by something the player did
+    // rather than by a drawn card -- drawing has already cleared the stack.
+    const bool stored = pushUndo(text);
+    if (discard(game_, seat, PlayerCard(std::uint8_t(cardId))) != Reason::Ok) {
+        if (stored)
+            undo_.pop_back();
         return false;
-    note(tr("Abgeworfen: %1").arg(cardLabel(cardId)));
+    }
+    note(text);
     refresh();
     sendState();
     return true;
@@ -643,10 +719,23 @@ bool SeucheEngine::applyEventPlay(const EventPlay &play)
         session_.send(message);
         return true;
     }
-    if (apply(game_, play, rng_) != Reason::Ok)
+    const QString text = tr("%1: %2").arg(seatName(play.seat))
+                                     .arg(QString::fromUtf8(eventName(play.event)));
+    const bool stored = pushUndo(text);
+    const Reason reason = apply(game_, play, rng_);
+    if (reason != Reason::Ok) {
+        if (stored)
+            undo_.pop_back();
+        // Until now a refused event card simply did nothing at all, which from
+        // the table looks like the card is broken rather than like the rules
+        // saying no. The reason belongs in the log where it can be read.
+        note(tr("%1 nicht möglich: %2")
+                 .arg(QString::fromUtf8(eventName(play.event)))
+                 .arg(QString::fromUtf8(reasonText(reason))));
+        refresh();
         return false;
-    note(tr("%1: %2").arg(seatName(play.seat))
-                     .arg(QString::fromUtf8(eventName(play.event))));
+    }
+    note(text);
     refresh();
     sendState();
     return true;
@@ -883,6 +972,7 @@ void SeucheEngine::handleMessage(int peer, const QVariantMap &message)
             if (!wire::fromSnapshot(message.value(QStringLiteral("g")).toMap(), game_))
                 return;
             running_ = true;
+            clearUndo();          // the host owns the history, not this device
             rolesLocked_ = message.value(QStringLiteral("locked")).toBool();
             journal_ = message.value(QStringLiteral("journal")).toStringList();
             const QVariantList owners = message.value(QStringLiteral("owners")).toList();

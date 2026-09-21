@@ -65,6 +65,13 @@ class SeucheEngine : public QObject
     Q_PROPERTY(bool mayAct READ mayAct NOTIFY changed)
     // Roles stay changeable until the first thing happens in the game.
     Q_PROPERTY(bool rolesLocked READ rolesLocked NOTIFY changed)
+    // Undo reaches back over everything that happened this turn while nothing
+    // has been turned face up yet.
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY changed)
+    Q_PROPERTY(QString undoText READ undoText NOTIFY changed)
+    // True at the one moment the player should be asked whether the turn is
+    // really over: the fourth action is spent, no card has been drawn yet.
+    Q_PROPERTY(bool awaitingTurnEnd READ awaitingTurnEnd NOTIFY changed)
     Q_PROPERTY(LanBrowser *browser READ browser CONSTANT)
 
 public:
@@ -100,6 +107,12 @@ public:
     Q_INVOKABLE QVariantList actionsForCity(int cityId) const;
     Q_INVOKABLE QVariantList allActions() const;
     Q_INVOKABLE bool run(int index);
+
+    bool canUndo() const;
+    QString undoText() const;
+    bool awaitingTurnEnd() const;
+    // Takes back the last action, event or discard of this turn.
+    Q_INVOKABLE bool undo();
 
     Q_INVOKABLE void drawCard();
     Q_INVOKABLE void infectCity();
@@ -162,6 +175,26 @@ private:
     bool applyRole(int seat, int role);   // no ownership check: the host's own path
     bool ownsSeat(int seat) const;
 
+    // --- undo ---
+    //
+    // A whole Game is a few kilobytes of plain vectors and arrays, so taking a
+    // copy before every move is cheaper and far safer than working out how to
+    // reverse each of the twelve action kinds. The random generator travels
+    // with it, so a redo after an undo plays out exactly as before.
+    //
+    // The stack only ever holds the current turn, and only while the game has
+    // shown nobody anything: the first drawn card ends it. Taking back a move
+    // after a card has been turned would be looking into the future, and this
+    // is a co-operative game where that is simply cheating.
+    struct Snapshot {
+        seuche::Game game;
+        std::mt19937 rng;
+        QStringList journal;
+        QString what;                     // what this would take back
+    };
+    bool pushUndo(const QString &what);   // false when nothing was stored
+    void clearUndo();
+
     // --- network helpers ---
     bool isHost() const { return session_.role() == LanSession::Host; }
     bool isGuest() const { return session_.role() == LanSession::Guest; }
@@ -185,4 +218,5 @@ private:
     QString netStatus_;
     std::vector<int> seatOwner_;   // per seat: peer id, -1 = this device
     std::vector<int> mySeats_;     // guest: the seats this device was given
+    std::vector<Snapshot> undo_;
 };

@@ -15,45 +15,37 @@ Page {
     id: page
     allowedOrientations: Orientation.All
 
+    function pick(title, entries, handler) {
+        var picker = pageStack.push(Qt.resolvedUrl("PickPage.qml"),
+                                    { title: title, entries: entries })
+        picker.picked.connect(handler)
+        return picker
+    }
+
     function play(entry) {
         if (entry.needs === "") {
             engine.playEvent(entry.seat, entry.event, -1, -1)
             pageStack.pop()
         } else if (entry.needs === "city") {
-            pageStack.push(Qt.resolvedUrl("PickPage.qml"), {
-                title: qsTr("Wohin?"),
-                entries: engine.cities,
-                onPicked: function (id) {
-                    engine.playEvent(entry.seat, entry.event, id, -1)
-                    pageStack.pop(page)
-                    pageStack.pop()
-                }
+            page.pick(qsTr("Wohin?"), engine.cities, function (id) {
+                engine.playEvent(entry.seat, entry.event, id, -1)
+                pageStack.pop(page)
+                pageStack.pop()
             })
         } else if (entry.needs === "pawn") {
-            pageStack.push(Qt.resolvedUrl("PickPage.qml"), {
-                title: qsTr("Wen versetzen?"),
-                entries: engine.players,
-                onPicked: function (seat) {
-                    pageStack.push(Qt.resolvedUrl("PickPage.qml"), {
-                        title: qsTr("Wohin?"),
-                        entries: engine.cities,
-                        onPicked: function (id) {
-                            engine.playEvent(entry.seat, entry.event, id, seat)
-                            pageStack.pop(page)
-                            pageStack.pop()
-                        }
-                    })
-                }
-            })
-        } else if (entry.needs === "infection") {
-            pageStack.push(Qt.resolvedUrl("PickPage.qml"), {
-                title: qsTr("Welche Karte aus dem Spiel nehmen?"),
-                entries: engine.infectionDiscard(),
-                onPicked: function (id) {
-                    engine.playEvent(entry.seat, entry.event, id, -1)
+            page.pick(qsTr("Wen versetzen?"), engine.players, function (seat) {
+                page.pick(qsTr("Wohin?"), engine.cities, function (id) {
+                    engine.playEvent(entry.seat, entry.event, id, seat)
                     pageStack.pop(page)
                     pageStack.pop()
-                }
+                })
+            })
+        } else if (entry.needs === "infection") {
+            page.pick(qsTr("Welche Karte aus dem Spiel nehmen?"),
+                      engine.infectionDiscard(), function (id) {
+                engine.playEvent(entry.seat, entry.event, id, -1)
+                pageStack.pop(page)
+                pageStack.pop()
             })
         } else if (entry.needs === "forecast") {
             pageStack.push(Qt.resolvedUrl("ForecastPage.qml"), { seat: entry.seat })
