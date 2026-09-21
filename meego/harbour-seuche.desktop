@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Seuche
+Comment=Kooperatives Seuchen-Brettspiel
+Exec=/opt/harbour-seuche/bin/harbour-seuche
+Icon=harbour-seuche
+X-Window-Icon=harbour-seuche
+X-HildonDesk-ShowInToolbar=true
+X-Osso-Type=application/x-executable
+Categories=Game;BoardGame;

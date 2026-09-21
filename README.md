@@ -12,6 +12,7 @@ Grafik, Rollen- und Ereignisbezeichnungen sowie alle Texte sind eigenständig.
 | Regelkern (`src/core`) | Aufbau, Aktionen, Ziehen, Epidemie, Infektion, Ausbrüche, Sieg/Niederlage — fertig und getestet |
 | App (Silica/QML) | spielbar: Spielplan mit Landkarte und Zoom (klein und formatfüllend), Aktionen je Stadt, Rollenwahl mit fester Farbe je Rolle, Handkarten, Ereigniskarten, Rückgängig, Protokoll |
 | LAN (`spec/netz.md`) | 2–4 Geräte im WLAN: Gastgeber hält die Partie, Gäste spiegeln sie |
+| Nokia N9 (`meego/`) | eigene QtQuick-1.1-Oberfläche auf demselben Kern; baut und paketiert, auf dem Gerät noch ungeprüft |
 | Erweiterungsmodule | vorgesehen, nicht implementiert (`spec/regeln.md`, §10) |
 
 Computergegner sind **nicht** geplant: Das Spiel ist kooperativ, alle Sitze werden
@@ -35,6 +36,8 @@ src/core/  Regelkern, reines C++17 ohne Qt
 src/       SeucheEngine — die QML-Brücke, und main.cpp
 src/net/   LAN-Transport (aus harbour-snapszer) und Drahtformat
 sailfish/  Silica-Oberfläche, Symbole, Desktop-Datei
+meego/     Ausgabe für MeeGo Harmattan (Nokia N9) — eigene Oberfläche für
+           QtQuick 1.1, Kreuzwerkzeugkette und Harmattan-Paket (meego/README.md)
 rpm/       Paketbeschreibung
 tests/     fünf Testprogramme ohne Framework, darunter test_play.cpp, das
            tausende vollständige Partien durchspielt

@@ -5,7 +5,8 @@
 #   meego/build.sh arm    N9-Binärdatei -> build/meego/arm/harbour-seuche
 #   meego/build.sh x86    derselbe Code für x86_64 gegen das Qt 4.7.4 des
 #                         Qt-Simulators, um ihn am Schreibtisch anzusehen
-#   meego/build.sh tests  Regelkern und LAN gegen Qt 4.7.4, und führt sie aus
+#   meego/build.sh check  übersetzt jede QML-Datei mit dem Qt 4.7 des Geräts
+#                         und meldet unbekannte Typen und Eigenschaften
 #
 # Der ARM-Bau braucht die Kreuzwerkzeugkette aus meego/toolchain.sh (XGCC) und
 # das MADDE-Sysroot (SYSROOT); moc kommt aus dem Qt des Simulators (SIMQT),
@@ -17,6 +18,7 @@ MODE=${1:-arm}
 XGCC=${XGCC:-/tmp/xgcc-harmattan}
 SYSROOT=${SYSROOT:-$HOME/QtSDK/Madde/sysroots/harmattan_sysroot_10.2011.34-1_slim}
 SIMQT=${SIMQT:-$HOME/QtSDK/Simulator/Qt/gcc}
+DESKTOPQT=${DESKTOPQT:-$HOME/QtSDK/Desktop/Qt/4.8.1/gcc}
 JOBS=${JOBS:-8}
 OUT=$HERE/build/meego/$MODE
 mkdir -p "$OUT"
@@ -61,8 +63,34 @@ x86)
     LDFLAGS="-L$SIMQT/lib -Wl,-rpath,$SIMQT/lib"
     LIBS="-lQtDeclarative -lQtScript -lQtNetwork -lQtGui -lQtCore -lpthread"
     ;;
+check)
+    # Nur der QML-Prüfer, ohne Kreuzübersetzer und ohne Bildschirm.
+    #
+    # Gebaut gegen das gewöhnliche Desktop-Qt (DESKTOPQT): das Qt des
+    # Simulators klinkt sich beim Start in den Simulator ein und bricht ohne
+    # X-Server ab. Die com.nokia.meego-Komponenten liegen getrennt davon unter
+    # Desktop/Qt/474/gcc/imports und werden von dort importiert.
+    CXX=${CXX:-g++}
+    # moc muss zu den Kopfdateien passen: hier 4.8.1, nicht das 4.7.4 des
+    # Simulators, das der ARM- und der x86-Bau benutzen.
+    MOC=$DESKTOPQT/bin/moc
+    QTINC=$DESKTOPQT/include
+    MEEGOIMPORTS=${MEEGOIMPORTS:-$HOME/QtSDK/Desktop/Qt/474/gcc/imports}
+    CXXFLAGS="$QT4_FLAGS -I$QTINC"
+    for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
+    "$MOC" $(echo "$CXXFLAGS" | tr ' ' '\n' | grep '^-[ID]' | tr '\n' ' ') \
+        "$HERE/meego/src/LinkItem.h" -o "$OUT/moc_LinkItem.cpp"
+    "$CXX" $CXXFLAGS -o "$OUT/checkqml" "$HERE/meego/tests/checkqml.cpp" \
+        "$HERE/meego/src/LinkItem.cpp" "$OUT/moc_LinkItem.cpp" \
+        -L"$DESKTOPQT/lib" -Wl,-rpath,"$DESKTOPQT/lib" \
+        -lQtDeclarative -lQtScript -lQtNetwork -lQtGui -lQtCore
+    # Das meego-Plugin zieht libQtDBus nach, das nur im lib-Verzeichnis liegt.
+    LD_LIBRARY_PATH=$DESKTOPQT/lib "$OUT/checkqml" "$HERE/meego/qml" "$MEEGOIMPORTS" || exit 1
+    python3 "$HERE/meego/tests/lint-qml.py" "$HERE/meego/qml"
+    exit $?
+    ;;
 *)
-    echo "usage: meego/build.sh [arm|x86]" >&2
+    echo "usage: meego/build.sh [arm|x86|check]" >&2
     exit 2
     ;;
 esac
