@@ -45,7 +45,7 @@ InfectionCards toCities(const QVariantList &list)
 
 } // namespace
 
-QVariantMap toSnapshot(const Game &game)
+QVariantMap toSnapshot(const Game &game, bool withDecks)
 {
     QVariantMap map;
 
@@ -91,6 +91,10 @@ QVariantMap toSnapshot(const Game &game)
 
     map[QStringLiteral("playerDeck")] = int(game.playerDeck.size());
     map[QStringLiteral("infectionDeck")] = int(game.infectionDeck.size());
+    if (withDecks) {
+        map[QStringLiteral("playerDeckCards")] = cardIds(game.playerDeck);
+        map[QStringLiteral("infectionDeckCards")] = cityIds(game.infectionDeck);
+    }
     map[QStringLiteral("playerDiscard")] = cardIds(game.playerDiscard);
     map[QStringLiteral("infectionDiscard")] = cityIds(game.infectionDiscard);
     map[QStringLiteral("removed")] = cityIds(game.removedFromGame);
@@ -102,6 +106,22 @@ QVariantMap toSnapshot(const Game &game)
     map[QStringLiteral("difficulty")] = int(game.difficulty);
     map[QStringLiteral("phase")] = int(game.phase);
     map[QStringLiteral("outcome")] = int(game.outcome);
+
+    // The modules are all off today, and every one of them is a rule change.
+    // A snapshot that leaves them out would load a saved game under different
+    // rules than it was played by, silently -- so they travel from the start.
+    QVariantMap modules;
+    modules[QStringLiteral("virulentStrain")] = game.modules.virulentStrain;
+    modules[QStringLiteral("mutation")] = game.modules.mutation;
+    modules[QStringLiteral("bioTerrorist")] = game.modules.bioTerrorist;
+    modules[QStringLiteral("quarantines")] = game.modules.quarantines;
+    modules[QStringLiteral("lab")] = game.modules.lab;
+    modules[QStringLiteral("worldwidePanic")] = game.modules.worldwidePanic;
+    modules[QStringLiteral("teamPlay")] = game.modules.teamPlay;
+    modules[QStringLiteral("emergencyEvents")] = game.modules.emergencyEvents;
+    modules[QStringLiteral("superbug")] = game.modules.superbug;
+    modules[QStringLiteral("hinterlands")] = game.modules.hinterlands;
+    map[QStringLiteral("modules")] = modules;
     return map;
 }
 
@@ -145,9 +165,16 @@ bool fromSnapshot(const QVariantMap &snapshot, Game &game)
     game.drawsLeft = std::uint8_t(snapshot.value(QStringLiteral("drawsLeft")).toInt());
     game.discardingPlayer = std::uint8_t(snapshot.value(QStringLiteral("discarding"), 0xFF).toInt());
 
-    // blanks: the right count, no order — that one stays with the host
-    game.playerDeck.assign(snapshot.value(QStringLiteral("playerDeck")).toInt(), PlayerCard());
-    game.infectionDeck.assign(snapshot.value(QStringLiteral("infectionDeck")).toInt(), City());
+    // With the order when it is there (a saved game), otherwise blanks with
+    // the right count -- the order stays with the host.
+    if (snapshot.contains(QStringLiteral("playerDeckCards")))
+        game.playerDeck = toCards(snapshot.value(QStringLiteral("playerDeckCards")).toList());
+    else
+        game.playerDeck.assign(snapshot.value(QStringLiteral("playerDeck")).toInt(), PlayerCard());
+    if (snapshot.contains(QStringLiteral("infectionDeckCards")))
+        game.infectionDeck = toCities(snapshot.value(QStringLiteral("infectionDeckCards")).toList());
+    else
+        game.infectionDeck.assign(snapshot.value(QStringLiteral("infectionDeck")).toInt(), City());
     game.playerDiscard = toCards(snapshot.value(QStringLiteral("playerDiscard")).toList());
     game.infectionDiscard = toCities(snapshot.value(QStringLiteral("infectionDiscard")).toList());
     game.removedFromGame = toCities(snapshot.value(QStringLiteral("removed")).toList());
@@ -159,6 +186,18 @@ bool fromSnapshot(const QVariantMap &snapshot, Game &game)
     game.difficulty = Difficulty(snapshot.value(QStringLiteral("difficulty")).toInt());
     game.phase = Phase(snapshot.value(QStringLiteral("phase")).toInt());
     game.outcome = Outcome(snapshot.value(QStringLiteral("outcome")).toInt());
+
+    const QVariantMap modules = snapshot.value(QStringLiteral("modules")).toMap();
+    game.modules.virulentStrain = modules.value(QStringLiteral("virulentStrain")).toBool();
+    game.modules.mutation = modules.value(QStringLiteral("mutation")).toBool();
+    game.modules.bioTerrorist = modules.value(QStringLiteral("bioTerrorist")).toBool();
+    game.modules.quarantines = modules.value(QStringLiteral("quarantines")).toBool();
+    game.modules.lab = modules.value(QStringLiteral("lab")).toBool();
+    game.modules.worldwidePanic = modules.value(QStringLiteral("worldwidePanic")).toBool();
+    game.modules.teamPlay = modules.value(QStringLiteral("teamPlay")).toBool();
+    game.modules.emergencyEvents = modules.value(QStringLiteral("emergencyEvents")).toBool();
+    game.modules.superbug = modules.value(QStringLiteral("superbug")).toBool();
+    game.modules.hinterlands = modules.value(QStringLiteral("hinterlands")).toBool();
     return true;
 }
 

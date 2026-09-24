@@ -20,11 +20,16 @@
 namespace seuche {
 namespace wire {
 
-QVariantMap toSnapshot(const Game &game);
+// `withDecks` decides what happens to the two face-down piles. Over the wire
+// they stay hidden and only their size travels; for a saved game the order has
+// to travel as well, or a continued game would deal blank cards. It is the same
+// encoder either way, because two encoders for one struct drift apart.
+QVariantMap toSnapshot(const Game &game, bool withDecks = false);
 
-// Rebuilds a guest's mirror. The decks come back as the right number of blank
-// cards, so every count and every legality check is right while the order stays
-// where it belongs, on the host.
+// Rebuilds a guest's mirror, or a saved game. When the snapshot carries the
+// deck order it is used; otherwise the decks come back as the right number of
+// blank cards, so every count and every legality check is right while the order
+// stays where it belongs, on the host.
 bool fromSnapshot(const QVariantMap &snapshot, Game &game);
 
 QVariantMap toVariant(const Action &action);

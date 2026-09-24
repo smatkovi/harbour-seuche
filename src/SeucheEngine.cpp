@@ -7,10 +7,21 @@
 
 #include "net/Snapshot.h"
 
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QVariantMap>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#  include <QStandardPaths>
+#else
+#  include <QDesktopServices>
+#endif
 
 #include <algorithm>
 #include <chrono>
+#include <sstream>
 
 using namespace seuche;
 
@@ -58,6 +69,11 @@ SeucheEngine::SeucheEngine(QObject *parent)
     connect(&session_, SIGNAL(peerConnectedChanged()), this, SIGNAL(netChanged()));
     connect(&session_, SIGNAL(connectionFailed(QString)), this, SLOT(onConnectionFailed(QString)));
 #endif
+
+    // Eine angefangene Partie steht beim Start wieder da. Es wird nicht
+    // hingesprungen -- die Startseite zeigt dann von selbst ihren Knopf
+    // "Laufende Partie fortsetzen", und wer lieber neu anfaengt, tut das.
+    loadGame();
 }
 
 void SeucheEngine::onConnectionFailed(const QString &reason)
@@ -340,6 +356,7 @@ void SeucheEngine::newGame(int seats, int difficulty)
         std::chrono::system_clock::now().time_since_epoch().count()));
     game_ = seuche::newGame(options, rng_);
     running_ = true;
+    local_ = !isHost();          // eine Netzpartie wird nicht gesichert
     journal_.clear();
     rolesLocked_ = false;
     clearUndo();
@@ -397,7 +414,143 @@ QString SeucheEngine::label(const Action &action) const
 void SeucheEngine::refresh()
 {
     legal_ = running_ ? legalActions(game_) : std::vector<Action>();
+    // Nach jeder Aenderung, nicht erst beim Beenden: ein Programm, das der
+    // Aufgabenverwalter abschiesst, bekommt kein aboutToQuit mehr zu sehen.
+    saveGame();
     emit changed();
+}
+
+// --- die angefangene Partie ---------------------------------------------------
+
+QString SeucheEngine::savePath() const
+{
+    // Fuer die Proben umlenkbar: sonst schriebe jeder Testlauf ueber die
+    // Partie, die auf dem Geraet gerade laeuft.
+    const QByteArray override = qgetenv("SEUCHE_DATA_DIR");
+    QString directory = QString::fromLocal8Bit(override.constData(), override.size());
+    if (directory.isEmpty()) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        directory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+#else
+        directory = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+#endif
+    }
+    if (directory.isEmpty())
+        return QString();
+    QDir().mkpath(directory);
+    return directory + QStringLiteral("/partie.json");
+}
+
+void SeucheEngine::saveGame()
+{
+    const QString path = savePath();
+    if (path.isEmpty())
+        return;
+
+    // Eine Netzpartie wird nicht gesichert (siehe SeucheEngine.h) -- und dabei
+    // auch nicht die daneben liegende eigene Partie weggeworfen: wer im Netz
+    // spielt, hat seine angefangene Partie nicht aufgegeben.
+    if (!local_)
+        return;
+    // Eine beendete Partie wird nicht fortgesetzt, und wo nichts mehr laeuft,
+    // soll auch nichts liegen bleiben.
+    if (!running_ || game_.over()) {
+        QFile::remove(path);
+        return;
+    }
+
+    QVariantMap map;
+    map[QStringLiteral("version")] = 1;
+    map[QStringLiteral("g")] = wire::toSnapshot(game_, true);
+    map[QStringLiteral("journal")] = QStringList(journal_);
+    map[QStringLiteral("locked")] = rolesLocked_;
+    // Der Zufall reist mit. Ohne ihn koennte man die App schliessen und wieder
+    // aufmachen, um die naechste Mischung bei einer Epidemie neu zu wuerfeln --
+    // in einem Spiel, in dem die App der Schiedsrichter ist, waere das eine
+    // offene Tuer.
+    std::ostringstream stream;
+    stream << rng_;
+    map[QStringLiteral("rng")] = QString::fromStdString(stream.str());
+
+    const QByteArray text =
+        QJsonDocument(QJsonObject::fromVariantMap(map)).toJson(QJsonDocument::Compact);
+
+    // Erst daneben, dann umbenennen: ein Abbruch mitten im Schreiben darf
+    // nicht die Partie zerlegen, die eben noch da war. (QSaveFile gibt es
+    // unter Qt 4 nicht, das Umbenennen schon.)
+    const QString temporary = path + QStringLiteral(".neu");
+    QFile::remove(temporary);
+    QFile file(temporary);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return;
+    if (file.write(text) != text.size()) {
+        file.close();
+        QFile::remove(temporary);
+        return;
+    }
+    file.close();
+    QFile::remove(path);
+    QFile::rename(temporary, path);
+}
+
+bool SeucheEngine::loadGame()
+{
+    const QString path = savePath();
+    if (path.isEmpty())
+        return false;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const QByteArray text = file.readAll();
+    file.close();
+
+    const QJsonDocument document = QJsonDocument::fromJson(text);
+    if (!document.isObject())
+        return false;
+    const QVariantMap map = document.object().toVariantMap();
+    if (map.value(QStringLiteral("version")).toInt() != 1)
+        return false;
+
+    seuche::Game restored;
+    if (!wire::fromSnapshot(map.value(QStringLiteral("g")).toMap(), restored))
+        return false;
+    if (restored.over())
+        return false;
+
+    game_ = restored;
+    journal_ = map.value(QStringLiteral("journal")).toStringList();
+    rolesLocked_ = map.value(QStringLiteral("locked")).toBool();
+    running_ = true;
+    local_ = true;
+    clearUndo();          // die Zuruecknahme gilt nur innerhalb eines Zuges
+
+    const QString state = map.value(QStringLiteral("rng")).toString();
+    std::istringstream stream(state.toStdString());
+    stream >> rng_;
+    if (stream.fail()) {
+        // Lieber neu gewuerfelt als mit einem undefinierten Generator
+        // weitergespielt -- und gesagt, dass es passiert ist.
+        rng_.seed(std::mt19937::result_type(
+            std::chrono::system_clock::now().time_since_epoch().count()));
+        note(tr("Zufall neu gesetzt: der gespeicherte Stand war unlesbar"));
+    }
+
+    refresh();
+    return true;
+}
+
+void SeucheEngine::discardSavedGame()
+{
+    const QString path = savePath();
+    if (!path.isEmpty())
+        QFile::remove(path);
+    if (local_ && running_ && !game_.over()) {
+        running_ = false;
+        local_ = false;
+        journal_.clear();
+        clearUndo();
+        refresh();
+    }
 }
 
 void SeucheEngine::note(const QString &line)
@@ -897,6 +1050,7 @@ bool SeucheEngine::hostGame(int seats, int difficulty, const QString &name)
         setStatus(tr("Konnte nicht öffnen: %1").arg(error));
         return false;
     }
+    local_ = false;
     newGame(seats, difficulty);                   // deals and sends the state
     seatOwner_.assign(seats, -1);
     setStatus(tr("Offen für %1 Geräte").arg(seats - 1));
@@ -908,6 +1062,7 @@ void SeucheEngine::joinGame(const QString &address)
 {
     session_.stop();
     running_ = false;
+    local_ = false;
     seatOwner_.clear();
     mySeats_.clear();
     session_.joinHost(LanSession::normalizeAddress(address));

@@ -21,8 +21,11 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName(QStringLiteral("harbour-seuche"));
 
     QQuickView *view = SailfishApp::createView();
-    view->rootContext()->setContextProperty(QStringLiteral("engine"),
-                                            new SeucheEngine(app));
+    SeucheEngine *game = new SeucheEngine(app);
+    // Der Stand wird nach jeder Aenderung weggeschrieben; das hier ist der
+    // Nachschlag fuer den geordneten Abgang.
+    QObject::connect(app, &QGuiApplication::aboutToQuit, game, &SeucheEngine::saveGame);
+    view->rootContext()->setContextProperty(QStringLiteral("engine"), game);
     view->setSource(SailfishApp::pathTo(QStringLiteral("qml/harbour-seuche.qml")));
     view->show();
     return app->exec();

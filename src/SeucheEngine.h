@@ -73,6 +73,9 @@ class SeucheEngine : public QObject
     // really over: the fourth action is spent, no card has been drawn yet.
     Q_PROPERTY(bool awaitingTurnEnd READ awaitingTurnEnd NOTIFY changed)
     Q_PROPERTY(LanBrowser *browser READ browser CONSTANT)
+    // Eine angefangene Partie liegt auf der Platte und ist beim Start wieder
+    // da. Die Startseite braucht dafuer nichts Eigenes: `running` ist dann
+    // schon wahr, und ihr Knopf "Laufende Partie fortsetzen" steht da.
 
 public:
     explicit SeucheEngine(QObject *parent = nullptr);
@@ -152,6 +155,9 @@ public:
     Q_INVOKABLE bool hostGame(int seats, int difficulty, const QString &name);
     Q_INVOKABLE void joinGame(const QString &address);
     Q_INVOKABLE void leaveNetwork();
+    // Die gespeicherte Partie wegwerfen. Fuer den Fall, dass jemand lieber neu
+    // anfaengt, ohne erst eine Partie zu Ende zu spielen.
+    Q_INVOKABLE void discardSavedGame();
     // Which seat a device holds, for the seat list on the LAN page.
     Q_INVOKABLE QVariantList seatOwners() const;
 
@@ -167,8 +173,27 @@ private slots:
     void releaseSeats(int peer);
     void onConnectionFailed(const QString &reason);
 
+public slots:
+    // Den Stand wegschreiben. Laeuft nach jeder Aenderung mit; der Anschluss an
+    // aboutToQuit ist nur der Nachschlag fuer den geordneten Abgang.
+    //
+    // Ein echter Schlitz und kein Q_INVOKABLE: die MeeGo-Fassung haengt ihn
+    // unter Qt 4 mit der Zeichenketten-Schreibweise an, und SLOT() findet nur
+    // Schlitze.
+    void saveGame();
+
 private:
     void refresh();                       // recompute the legal actions, emit changed
+    // --- die angefangene Partie ---------------------------------------------
+    //
+    // Gespeichert wird nur eine Partie, die diesem Geraet allein gehoert. Eine
+    // Netzpartie nicht: der Gastgeber koennte zwar seinen Stand sichern, aber
+    // wer an welchem Sitz sitzt, haengt an Verbindungen, die es nach dem
+    // Neustart nicht mehr gibt -- eine halb wiederhergestellte Netzpartie waere
+    // schlimmer als keine. Ein Gast hat ohnehin nur ein Spiegelbild mit
+    // verdeckten Stapeln, und das darf nie ueber einen echten Stand.
+    QString savePath() const;
+    bool loadGame();
     void note(const QString &line);
     QString label(const seuche::Action &action) const;
     QString seatName(int seat) const;
@@ -217,6 +242,8 @@ private:
     QStringList journal_;
     bool running_ = false;
     bool rolesLocked_ = false;
+    // Diese Partie gehoert diesem Geraet allein und darf gesichert werden.
+    bool local_ = false;
 
     LanSession session_;
     LanBrowser browser_;

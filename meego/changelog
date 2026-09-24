@@ -1,3 +1,15 @@
+harbour-seuche (0.6.0) unstable; urgency=low
+
+  * Die angefangene Partie überlebt das Schließen der App: sie wird nach jeder
+    Änderung weggeschrieben und ist beim nächsten Start wieder da. Auf der
+    Startseite steht dann "Laufende Partie fortsetzen".
+  * Gespeichert wird auch die Reihenfolge der verdeckten Stapel und der Stand
+    des Zufallsgenerators, sonst käme beim Weiterspielen eine leere Karte oder
+    eine neu gewürfelte Mischung.
+  * Neu im Menü der Startseite: "Angefangene Partie verwerfen".
+
+ -- Sebastian Matkovich <sebastian.matkovich@gmail.com>  Wed, 24 Sep 2026 21:30:00 +0200
+
 harbour-seuche (0.5.0) unstable; urgency=low
 
   * Erste Ausgabe für MeeGo Harmattan (Nokia N9). Derselbe Regelkern und

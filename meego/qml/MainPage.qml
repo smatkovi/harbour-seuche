@@ -39,7 +39,25 @@ Page {
                 text: "Über Seuche"
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
+            // Die angefangene Partie liegt auf der Platte und ist beim nächsten
+            // Start wieder da. Wer sie nicht mehr will, soll sie loswerden
+            // können, ohne sie erst zu Ende spielen zu müssen.
+            MenuItem {
+                visible: engine.running && !engine.over
+                text: "Angefangene Partie verwerfen"
+                onClicked: verwerfenDialog.open()
+            }
         }
+    }
+
+    QueryDialog {
+        id: verwerfenDialog
+        titleText: "Angefangene Partie verwerfen"
+        message: "Der gespeicherte Stand wird gelöscht. Das lässt sich nicht "
+               + "rückgängig machen."
+        acceptButtonText: "Verwerfen"
+        rejectButtonText: "Abbrechen"
+        onAccepted: engine.discardSavedGame()
     }
 
     SelectionDialog {
@@ -141,6 +159,8 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - 4 * AppTheme.horizontalPageMargin
                 visible: engine.running && !engine.over
+                // Auch nach einem Neustart der App: der Stand wird nach jedem
+                // Zug weggeschrieben und beim Start wieder eingelesen.
                 text: "Laufende Partie fortsetzen"
                 onClicked: pageStack.push(Qt.resolvedUrl("BoardPage.qml"))
             }

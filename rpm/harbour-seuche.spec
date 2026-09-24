@@ -1,5 +1,5 @@
 Name: harbour-seuche
-Version: 0.5.0
+Version: 0.6.0
 Release: 1
 Summary: Kooperatives Seuchen-Brettspiel
 License: GPL-3.0-or-later
@@ -73,6 +73,21 @@ install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
 /usr/share/licenses/%{name}
 
 %changelog
+* Wed Sep 24 2026 smatkovi - 0.6.0-1
+- Die angefangene Partie überlebt das Schließen der App. Sie wird nach jeder
+  Änderung weggeschrieben — nicht erst beim Beenden, denn ein Programm, das
+  der Aufgabenverwalter abschießt, bekommt kein aboutToQuit mehr zu sehen —
+  und ist beim nächsten Start wieder da; auf der Startseite steht dann
+  "Laufende Partie fortsetzen".
+- Gespeichert wird auch die Reihenfolge der beiden verdeckten Stapel und der
+  Stand des Zufallsgenerators. Ohne das erste würden beim Weiterspielen leere
+  Karten ausgeteilt, ohne das zweite ließe sich die nächste Mischung durch
+  Schließen und Öffnen der App neu würfeln.
+- Eine beendete Partie wird nicht fortgesetzt, und eine Netzpartie gar nicht
+  erst gespeichert: wer an welchem Sitz sitzt, hängt an Verbindungen, die es
+  nach einem Neustart nicht mehr gibt. Der eigene Spielstand bleibt dabei
+  unangetastet liegen.
+- Neu im Menü der Startseite: "Angefangene Partie verwerfen".
 * Fri Sep 18 2026 smatkovi - 0.4.0-1
 - Die Karte hat einen Landhintergrund: eine grobe Weltkarte, aus den
   FlightGear-Flugplatzdaten gerechnet, statt abstrakter Farbflächen

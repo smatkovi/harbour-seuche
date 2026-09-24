@@ -73,6 +73,9 @@ int main(int argc, char* argv[])
     QDeclarativeView view;
     view.setResizeMode(QDeclarativeView::SizeRootObjectToView);
     view.rootContext()->setContextProperty(QString::fromLatin1("engine"), &engine);
+    // Der Stand wird nach jeder Aenderung weggeschrieben; das hier ist der
+    // Nachschlag fuer den geordneten Abgang.
+    QObject::connect(&app, SIGNAL(aboutToQuit()), &engine, SLOT(saveGame()));
     // NICHT "Theme": com.nokia.meego exportiert selbst ein Theme, und
     // das gewinnt gegen jede gleichnamige Kontext-Eigenschaft. Die
     // QML bekommt dann stillschweigend lauter undefined-Werte --

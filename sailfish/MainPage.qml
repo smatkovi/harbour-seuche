@@ -29,7 +29,18 @@ Page {
                 text: qsTr("Über Seuche")
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
+            // Die angefangene Partie liegt auf der Platte und ist beim nächsten
+            // Start wieder da. Wer sie nicht mehr will, soll sie loswerden
+            // können, ohne sie erst zu Ende spielen zu müssen.
+            MenuItem {
+                visible: engine.running && !engine.over
+                text: qsTr("Angefangene Partie verwerfen")
+                onClicked: verwerfen.execute(qsTr("Partie wird verworfen"),
+                                             function () { engine.discardSavedGame() })
+            }
         }
+
+        RemorsePopup { id: verwerfen }
 
         Column {
             id: column
@@ -106,6 +117,8 @@ Page {
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: engine.running && !engine.over
+                // Auch nach einem Neustart der App: der Stand wird nach jedem
+                // Zug weggeschrieben und beim Start wieder eingelesen.
                 text: qsTr("Laufende Partie fortsetzen")
                 onClicked: pageStack.push(Qt.resolvedUrl("BoardPage.qml"))
             }
