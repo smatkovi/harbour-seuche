@@ -135,6 +135,8 @@ int main(int argc, char *argv[])
         }
         check(facade(wieder) == facade(zwilling),
               QStringLiteral("beide laufen gleich weiter (Schritt %1)").arg(step));
+        if (wieder.over())
+            break;          // ausgespielt: der Rest der Probe braucht keine Runde mehr
     }
 
     // --- wegwerfen ----------------------------------------------------------
@@ -163,6 +165,10 @@ int main(int argc, char *argv[])
               QStringLiteral("der eigene Stand bleibt liegen, wenn im Netz gespielt wird"));
         gast.leaveNetwork();
         check(QFile::exists(path), QStringLiteral("und auch danach noch"));
+        // Und man muss die App nicht neu starten, um wieder an sie
+        // heranzukommen: nach dem Verlassen des Netzes ist sie da.
+        check(gast.running(),
+              QStringLiteral("nach dem Verlassen des Netzes ist die eigene Partie wieder da"));
     }
     {
         SeucheEngine zurueck;

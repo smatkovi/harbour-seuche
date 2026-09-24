@@ -544,7 +544,10 @@ void SeucheEngine::discardSavedGame()
     const QString path = savePath();
     if (!path.isEmpty())
         QFile::remove(path);
-    if (local_ && running_ && !game_.over()) {
+    // Auch eine beendete Partie wird weggeraeumt: "verwerfen" heisst
+    // verwerfen, und wer die Bedingung hier an `!over()` haengt, laesst die
+    // Schlussstellung stehen und wundert sich.
+    if (running_) {
         running_ = false;
         local_ = false;
         journal_.clear();
@@ -1076,6 +1079,12 @@ void SeucheEngine::leaveNetwork()
     seatOwner_.clear();
     mySeats_.clear();
     setStatus(QString());
+    // Wer im Netz gespielt hat -- oder es versucht hat und nicht hingekommen
+    // ist --, steht danach ohne Partie da, obwohl die eigene angefangene noch
+    // auf der Platte liegt. Sie wird hier wieder geholt, statt den Benutzer die
+    // App neu starten zu lassen.
+    if (!running_)
+        loadGame();
     emit changed();
 }
 

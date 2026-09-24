@@ -1,5 +1,5 @@
 Name: harbour-seuche
-Version: 0.6.0
+Version: 0.6.1
 Release: 1
 Summary: Kooperatives Seuchen-Brettspiel
 License: GPL-3.0-or-later
@@ -73,6 +73,11 @@ install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/
 /usr/share/licenses/%{name}
 
 %changelog
+* Wed Sep 24 2026 smatkovi - 0.6.1-1
+- Wer im Netz gespielt hat — oder es versucht hat und nicht hingekommen ist —
+  bekommt seine eigene angefangene Partie beim Verlassen des Netzes sofort
+  zurück, statt die App dafür neu starten zu müssen.
+- "Angefangene Partie verwerfen" räumt auch eine ausgespielte Partie weg.
 * Wed Sep 24 2026 smatkovi - 0.6.0-1
 - Die angefangene Partie überlebt das Schließen der App. Sie wird nach jeder
   Änderung weggeschrieben — nicht erst beim Beenden, denn ein Programm, das
