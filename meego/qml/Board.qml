@@ -33,7 +33,7 @@ Item {
     // gezeichnet und fielen damit aus dem sichtbaren Bereich — und antippen
     // ließen sich die Städte auch nicht. Deshalb ist die Fläche zum Schieben
     // ringsum breiter als die Karte.
-    property real pad: Theme.itemSizeExtraSmall * 0.9
+    property real pad: AppTheme.itemSizeExtraSmall * 0.9
 
     signal cityClicked(int cityId)
 
@@ -124,7 +124,7 @@ Item {
 
                             // auf dem Schirm immer gleich groß: Zoomen zieht die
                             // Städte auseinander, statt alles aufzublasen
-                            width: Theme.itemSizeExtraSmall * 0.46
+                            width: AppTheme.itemSizeExtraSmall * 0.46
                             height: width
                             x: city.x * plan.width - width / 2
                             y: city.y * plan.height - height / 2
@@ -138,7 +138,7 @@ Item {
                                 visible: cityItem.here
                                 color: "transparent"
                                 border.width: Math.max(2, dot.width / 6)
-                                border.color: Theme.highlightColor
+                                border.color: AppTheme.highlightColor
                             }
 
                             Rectangle {
@@ -215,7 +215,7 @@ Item {
                                             ? Style.roleColourOf(engine.players[seat].roleId)
                                             : Style.pawn
                                         border.width: onTurn ? Math.max(1, width / 5) : 1
-                                        border.color: onTurn ? Theme.highlightColor
+                                        border.color: onTurn ? AppTheme.highlightColor
                                                              : Qt.rgba(0, 0, 0, 0.65)
                                     }
                                 }
@@ -235,8 +235,8 @@ Item {
                                 Label {
                                     id: cityLabel
                                     anchors.centerIn: parent
-                                    font.pixelSize: Theme.fontSizeTiny
-                                    color: Theme.primaryColor
+                                    font.pixelSize: AppTheme.fontSizeTiny
+                                    color: AppTheme.primaryColor
                                     text: cityItem.city.name
                                 }
                             }
@@ -258,18 +258,18 @@ Item {
     Column {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: Theme.paddingSmall
-        spacing: Theme.paddingSmall
+        anchors.margins: AppTheme.paddingSmall
+        spacing: AppTheme.paddingSmall
 
         Rectangle {
-            width: Theme.itemSizeExtraSmall * 0.7
+            width: AppTheme.itemSizeExtraSmall * 0.7
             height: width
             radius: width / 2
             color: Qt.rgba(0, 0, 0, 0.55)
             Label {
                 anchors.centerIn: parent
                 text: "+"
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: AppTheme.fontSizeLarge
             }
             MouseArea {
                 anchors.fill: parent
@@ -277,14 +277,14 @@ Item {
             }
         }
         Rectangle {
-            width: Theme.itemSizeExtraSmall * 0.7
+            width: AppTheme.itemSizeExtraSmall * 0.7
             height: width
             radius: width / 2
             color: Qt.rgba(0, 0, 0, 0.55)
             Label {
                 anchors.centerIn: parent
                 text: "−"
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: AppTheme.fontSizeLarge
             }
             MouseArea {
                 anchors.fill: parent
@@ -292,14 +292,14 @@ Item {
             }
         }
         Rectangle {
-            width: Theme.itemSizeExtraSmall * 0.7
+            width: AppTheme.itemSizeExtraSmall * 0.7
             height: width
             radius: width / 2
             color: Qt.rgba(0, 0, 0, 0.55)
             Label {
                 anchors.centerIn: parent
                 text: "⌖"
-                font.pixelSize: Theme.fontSizeMedium
+                font.pixelSize: AppTheme.fontSizeMedium
             }
             MouseArea {
                 anchors.fill: parent

@@ -44,11 +44,16 @@ cp "$HERE/sailfish/icons/icon-256.png" "$STAGE/opt/harbour-seuche/icons/icon-256
 # --- Symbole: 80x80 für den Starter, 64x64 base64 für die Paketverwaltung ---
 # Der Starter sucht in hicolor, nicht im meegotouch-Thema; beides zu setzen
 # kostet nichts und deckt beide Wege ab.
-magick "$HERE/sailfish/icons/icon-256.png" -resize 80x80 \
+# Das Icon traegt die Stock-Silhouette von Harmattan, erzeugt mit
+# ~/ps/meego-icon-tool/squircle.py --fill. Ein rundes Icon faellt auf dem
+# Startbildschirm zwischen den Stock-Icons sofort als fremd auf; die Ecken
+# werden dabei mit der eigenen Grundfarbe des Icons gefuellt, damit nichts
+# vom Inhalt weggeschnitten wird.
+cp "$HERE/meego/icons/icon-80.png" \
     "$STAGE/usr/share/icons/hicolor/80x80/apps/harbour-seuche.png"
-magick "$HERE/sailfish/icons/icon-256.png" -resize 80x80 \
+cp "$HERE/meego/icons/icon-80.png" \
     "$STAGE/usr/share/themes/base/meegotouch/icons/harbour-seuche-80.png"
-magick "$HERE/sailfish/icons/icon-256.png" -resize 64x64 "$OUT/icon-64.png"
+cp "$HERE/meego/icons/icon-64.png" "$OUT/icon-64.png"
 
 cp "$PKG/harbour-seuche.desktop" "$STAGE/usr/share/applications/harbour-seuche.desktop"
 gzip -9nc "$PKG/changelog" > "$STAGE/usr/share/doc/harbour-seuche/changelog.gz"

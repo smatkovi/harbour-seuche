@@ -37,15 +37,15 @@ Page {
 
         delegate: ListItem {
             id: seatItem
-            contentHeight: Theme.itemSizeMedium
+            contentHeight: AppTheme.itemSizeMedium
 
             property bool mine: engine.mySeats.indexOf(modelData.seat) >= 0
             enabled: !engine.rolesLocked && mine
 
             Rectangle {
-                x: Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
-                width: Theme.fontSizeLarge
+                width: AppTheme.fontSizeLarge
                 height: width
                 radius: width / 2
                 color: Style.roleColourOf(modelData.roleId)
@@ -54,21 +54,21 @@ Page {
             }
 
             Column {
-                x: Theme.horizontalPageMargin + Theme.fontSizeLarge + Theme.paddingMedium
-                width: parent.width - x - Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin + AppTheme.fontSizeLarge + AppTheme.paddingMedium
+                width: parent.width - x - AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
 
                 Label {
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: AppTheme.fontSizeSmall
                     text: "Sitz " + (modelData.seat + 1) + " — " + modelData.role
-                    color: seatItem.enabled ? Theme.primaryColor : Theme.secondaryColor
+                    color: seatItem.enabled ? AppTheme.primaryColor : AppTheme.secondaryColor
                 }
 
                 Label {
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
+                    font.pixelSize: AppTheme.fontSizeExtraSmall
+                    color: AppTheme.secondaryColor
                     text: (engine.netRole === "local"
                            ? "" : (seatItem.mine ? "dieses Gerät · " : "anderes Gerät · "))
                           + modelData.ability
@@ -90,16 +90,16 @@ Page {
 
         footer: Column {
             width: view.width
-            spacing: Theme.paddingMedium
+            spacing: AppTheme.paddingMedium
 
-            Item { width: 1; height: Theme.paddingLarge }
+            Item { width: 1; height: AppTheme.paddingLarge }
 
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 wrapMode: Text.WordWrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
+                font.pixelSize: AppTheme.fontSizeExtraSmall
+                color: AppTheme.secondaryColor
                 visible: !engine.rolesLocked
                 text: engine.netRole === "local"
                     ? "Nicht gewählte Sitze behalten ihre zufällig gezogene Rolle."
@@ -109,7 +109,7 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 4 * Theme.horizontalPageMargin
+                width: parent.width - 4 * AppTheme.horizontalPageMargin
                 visible: page.showStart
                 text: "Zum Spielplan"
                 onClicked: {

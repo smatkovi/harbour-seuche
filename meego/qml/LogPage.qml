@@ -24,11 +24,11 @@ Page {
         model: engine.journal
 
         delegate: Label {
-            x: Theme.horizontalPageMargin
-            width: view.width - 2 * Theme.horizontalPageMargin
+            x: AppTheme.horizontalPageMargin
+            width: view.width - 2 * AppTheme.horizontalPageMargin
             wrapMode: Text.WordWrap
-            font.pixelSize: Theme.fontSizeSmall
-            color: Theme.primaryColor
+            font.pixelSize: AppTheme.fontSizeSmall
+            color: AppTheme.primaryColor
             text: modelData
         }
     }

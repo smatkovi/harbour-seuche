@@ -55,31 +55,31 @@ Page {
 
         delegate: ListItem {
             id: row
-            contentHeight: Theme.itemSizeSmall
+            contentHeight: AppTheme.itemSizeSmall
             enabled: page.taken(modelData.id) === 0
 
             Rectangle {
-                x: Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
-                width: Theme.paddingSmall
+                width: AppTheme.paddingSmall
                 height: parent.height * 0.6
                 color: Style.colourOf(modelData.colour)
             }
 
             Label {
-                x: Theme.horizontalPageMargin + Theme.paddingLarge
+                x: AppTheme.horizontalPageMargin + AppTheme.paddingLarge
                 anchors.verticalCenter: parent.verticalCenter
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: AppTheme.fontSizeSmall
                 text: modelData.name
-                color: row.enabled ? Theme.primaryColor : Theme.secondaryColor
+                color: row.enabled ? AppTheme.primaryColor : AppTheme.secondaryColor
             }
 
             Label {
                 anchors.right: parent.right
-                anchors.rightMargin: Theme.horizontalPageMargin
+                anchors.rightMargin: AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
                 visible: page.taken(modelData.id) > 0
-                color: Theme.highlightColor
+                color: AppTheme.highlightColor
                 text: page.taken(modelData.id)
             }
 

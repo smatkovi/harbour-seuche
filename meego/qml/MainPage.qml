@@ -57,22 +57,22 @@ Page {
     Flickable {
         anchors.fill: parent
         contentWidth: width
-        contentHeight: column.height + Theme.paddingLarge
+        contentHeight: column.height + AppTheme.paddingLarge
         clip: true
 
         Column {
             id: column
             width: page.width
-            spacing: Theme.paddingMedium
+            spacing: AppTheme.paddingMedium
 
             PageHeader { title: "Seuche" }
 
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 wrapMode: Text.WordWrap
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                color: AppTheme.secondaryColor
+                font.pixelSize: AppTheme.fontSizeSmall
                 text: "Vier Seuchen brechen weltweit aus. Ihr gewinnt gemeinsam, sobald "
                     + "für alle vier ein Heilmittel gefunden ist — und verliert, sobald "
                     + "acht Ausbrüche geschehen sind, ein Würfelvorrat ausgeht oder das "
@@ -82,14 +82,14 @@ Page {
             SectionHeader { text: "Tisch" }
 
             Label {
-                x: Theme.horizontalPageMargin
-                font.pixelSize: Theme.fontSizeSmall
+                x: AppTheme.horizontalPageMargin
+                font.pixelSize: AppTheme.fontSizeSmall
                 text: "Sitze an diesem Gerät: " + page.seatCount
             }
 
             Slider {
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
                 minimumValue: 2
                 maximumValue: 4
                 stepSize: 1
@@ -100,11 +100,11 @@ Page {
             }
 
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 wrapMode: Text.WordWrap
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
+                color: AppTheme.secondaryColor
+                font.pixelSize: AppTheme.fontSizeExtraSmall
                 text: "Alle Sitze werden hier gesteuert; die Rollen werden zufällig gezogen "
                     + "und lassen sich vor dem ersten Zug frei tauschen. Zu zweit hat jede "
                     + "Person 4 Handkarten, zu dritt 3, zu viert 2.\n"
@@ -113,14 +113,14 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 4 * Theme.horizontalPageMargin
+                width: parent.width - 4 * AppTheme.horizontalPageMargin
                 text: page.difficultyNames[page.difficulty]
                 onClicked: difficultyDialog.open()
             }
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 4 * Theme.horizontalPageMargin
+                width: parent.width - 4 * AppTheme.horizontalPageMargin
                 text: "Partie beginnen"
                 onClicked: {
                     engine.newGame(page.seatCount, page.difficulty)
@@ -132,14 +132,14 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 4 * Theme.horizontalPageMargin
+                width: parent.width - 4 * AppTheme.horizontalPageMargin
                 text: "Im Netzwerk spielen"
                 onClicked: pageStack.push(Qt.resolvedUrl("LanPage.qml"))
             }
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 4 * Theme.horizontalPageMargin
+                width: parent.width - 4 * AppTheme.horizontalPageMargin
                 visible: engine.running && !engine.over
                 text: "Laufende Partie fortsetzen"
                 onClicked: pageStack.push(Qt.resolvedUrl("BoardPage.qml"))

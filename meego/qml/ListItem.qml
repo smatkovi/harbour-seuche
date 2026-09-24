@@ -12,7 +12,7 @@ import QtQuick 1.1
 Item {
     id: item
 
-    property int contentHeight: Theme.itemSizeSmall
+    property int contentHeight: AppTheme.itemSizeSmall
     property bool enabled: true
     property alias pressed: area.pressed
 
@@ -24,7 +24,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: area.pressed && item.enabled
-        color: Theme.secondaryHighlightColor
+        color: AppTheme.secondaryHighlightColor
         opacity: 0.45
     }
 

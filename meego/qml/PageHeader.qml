@@ -17,30 +17,30 @@ Item {
 
     width: parent ? parent.width : 0
     height: titleLabel.height + (description.length > 0 ? detail.height : 0)
-            + 2 * Theme.paddingMedium
+            + 2 * AppTheme.paddingMedium
 
     Label {
         id: titleLabel
         anchors.right: parent.right
-        anchors.rightMargin: Theme.horizontalPageMargin
+        anchors.rightMargin: AppTheme.horizontalPageMargin
         anchors.top: parent.top
-        anchors.topMargin: Theme.paddingMedium
-        font.pixelSize: Theme.fontSizeLarge
-        color: Theme.highlightColor
+        anchors.topMargin: AppTheme.paddingMedium
+        font.pixelSize: AppTheme.fontSizeLarge
+        color: AppTheme.highlightColor
         text: header.title
     }
 
     Label {
         id: detail
         anchors.right: parent.right
-        anchors.rightMargin: Theme.horizontalPageMargin
+        anchors.rightMargin: AppTheme.horizontalPageMargin
         anchors.top: titleLabel.bottom
-        width: parent.width - 2 * Theme.horizontalPageMargin
+        width: parent.width - 2 * AppTheme.horizontalPageMargin
         horizontalAlignment: Text.AlignRight
         wrapMode: Text.WordWrap
         visible: header.description.length > 0
-        font.pixelSize: Theme.fontSizeExtraSmall
-        color: Theme.secondaryColor
+        font.pixelSize: AppTheme.fontSizeExtraSmall
+        color: AppTheme.secondaryColor
         text: header.description
     }
 }

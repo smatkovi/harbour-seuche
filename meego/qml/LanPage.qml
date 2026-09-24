@@ -55,12 +55,12 @@ Page {
         anchors.fill: parent
         clip: true
         contentWidth: width
-        contentHeight: column.height + Theme.paddingLarge
+        contentHeight: column.height + AppTheme.paddingLarge
 
         Column {
             id: column
             width: page.width
-            spacing: Theme.paddingMedium
+            spacing: AppTheme.paddingMedium
 
             PageHeader {
                 title: "Netzwerk"
@@ -70,7 +70,7 @@ Page {
             // --- laufende Sitzung -----------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.paddingSmall
+                spacing: AppTheme.paddingSmall
                 visible: engine.netRole !== "local"
 
                 SectionHeader { text: "Tisch" }
@@ -79,11 +79,11 @@ Page {
                     model: engine.seatOwners()
 
                     delegate: Label {
-                        x: Theme.horizontalPageMargin
-                        width: column.width - 2 * Theme.horizontalPageMargin
+                        x: AppTheme.horizontalPageMargin
+                        width: column.width - 2 * AppTheme.horizontalPageMargin
                         wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: modelData.mine ? Theme.highlightColor : Theme.secondaryColor
+                        font.pixelSize: AppTheme.fontSizeSmall
+                        color: modelData.mine ? AppTheme.highlightColor : AppTheme.secondaryColor
                         text: modelData.role + (modelData.mine ? " — dieses Gerät"
                                                                : " — anderes Gerät")
                     }
@@ -91,7 +91,7 @@ Page {
 
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 4 * Theme.horizontalPageMargin
+                    width: parent.width - 4 * AppTheme.horizontalPageMargin
                     text: engine.netRole === "host" ? "Tisch schließen" : "Verbindung trennen"
                     onClicked: {
                         engine.leaveNetwork()
@@ -103,20 +103,20 @@ Page {
             // --- eröffnen --------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.paddingSmall
+                spacing: AppTheme.paddingSmall
                 visible: engine.netRole === "local"
 
                 SectionHeader { text: "Spiel eröffnen" }
 
                 Label {
-                    x: Theme.horizontalPageMargin
-                    font.pixelSize: Theme.fontSizeSmall
+                    x: AppTheme.horizontalPageMargin
+                    font.pixelSize: AppTheme.fontSizeSmall
                     text: "Tischgröße: " + page.seatCount + " Sitze"
                 }
 
                 Slider {
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    x: AppTheme.horizontalPageMargin
+                    width: parent.width - 2 * AppTheme.horizontalPageMargin
                     minimumValue: 2
                     maximumValue: 4
                     stepSize: 1
@@ -126,24 +126,24 @@ Page {
 
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 4 * Theme.horizontalPageMargin
+                    width: parent.width - 4 * AppTheme.horizontalPageMargin
                     text: "Schwierigkeit: " + page.difficultyNames[page.difficulty]
                     onClicked: difficultyDialog.open()
                 }
 
                 TextField {
                     id: tableName
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    x: AppTheme.horizontalPageMargin
+                    width: parent.width - 2 * AppTheme.horizontalPageMargin
                     placeholderText: "Name des Tisches"
                 }
 
                 Label {
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    x: AppTheme.horizontalPageMargin
+                    width: parent.width - 2 * AppTheme.horizontalPageMargin
                     wrapMode: Text.WordWrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
+                    font.pixelSize: AppTheme.fontSizeExtraSmall
+                    color: AppTheme.secondaryColor
                     text: "Der erste Sitz bleibt hier, jedes beitretende Gerät bekommt den "
                         + "nächsten. Sitze, die niemand übernimmt, werden hier gespielt.\n"
                         + "Dieses Gerät: " + engine.browser.localAddresses
@@ -151,7 +151,7 @@ Page {
 
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 4 * Theme.horizontalPageMargin
+                    width: parent.width - 4 * AppTheme.horizontalPageMargin
                     text: "Tisch eröffnen"
                     onClicked: {
                         if (engine.hostGame(page.seatCount, page.difficulty, tableName.text))
@@ -163,14 +163,14 @@ Page {
             // --- beitreten -------------------------------------------------
             Column {
                 width: parent.width
-                spacing: Theme.paddingSmall
+                spacing: AppTheme.paddingSmall
                 visible: engine.netRole === "local"
 
                 SectionHeader { text: "Beitreten" }
 
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 4 * Theme.horizontalPageMargin
+                    width: parent.width - 4 * AppTheme.horizontalPageMargin
                     text: engine.browser.searching ? "Suche läuft …" : "Im WLAN suchen"
                     enabled: !engine.browser.searching
                     onClicked: engine.browser.search()
@@ -180,19 +180,19 @@ Page {
                     model: engine.browser.hosts
 
                     delegate: ListItem {
-                        contentHeight: Theme.itemSizeSmall
+                        contentHeight: AppTheme.itemSizeSmall
 
                         Column {
-                            x: Theme.horizontalPageMargin
+                            x: AppTheme.horizontalPageMargin
                             anchors.verticalCenter: parent.verticalCenter
 
                             Label {
-                                font.pixelSize: Theme.fontSizeSmall
+                                font.pixelSize: AppTheme.fontSizeSmall
                                 text: modelData.name
                             }
                             Label {
-                                font.pixelSize: Theme.fontSizeExtraSmall
-                                color: Theme.secondaryColor
+                                font.pixelSize: AppTheme.fontSizeExtraSmall
+                                color: AppTheme.secondaryColor
                                 text: modelData.address
                             }
                         }
@@ -206,15 +206,15 @@ Page {
 
                 TextField {
                     id: manual
-                    x: Theme.horizontalPageMargin
-                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    x: AppTheme.horizontalPageMargin
+                    width: parent.width - 2 * AppTheme.horizontalPageMargin
                     placeholderText: "Adresse von Hand, 192.168.…"
                     inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                 }
 
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 4 * Theme.horizontalPageMargin
+                    width: parent.width - 4 * AppTheme.horizontalPageMargin
                     text: "Dieser Adresse beitreten"
                     enabled: manual.text.length > 0
                     onClicked: {

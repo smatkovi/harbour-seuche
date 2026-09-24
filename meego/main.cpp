@@ -73,7 +73,12 @@ int main(int argc, char* argv[])
     QDeclarativeView view;
     view.setResizeMode(QDeclarativeView::SizeRootObjectToView);
     view.rootContext()->setContextProperty(QString::fromLatin1("engine"), &engine);
-    view.rootContext()->setContextProperty(QString::fromLatin1("Theme"), &theme);
+    // NICHT "Theme": com.nokia.meego exportiert selbst ein Theme, und
+    // das gewinnt gegen jede gleichnamige Kontext-Eigenschaft. Die
+    // QML bekommt dann stillschweigend lauter undefined-Werte --
+    // Schriftgroessen, Farben und Abstaende fehlen, und die Seite
+    // sieht aus, als waere sie nie gestaltet worden.
+    view.rootContext()->setContextProperty(QString::fromLatin1("AppTheme"), &theme);
     view.rootContext()->setContextProperty(QString::fromLatin1("Style"), &style);
     view.setSource(QUrl::fromLocalFile(root + QString::fromLatin1("/qml/harbour-seuche.qml")));
     if (view.status() == QDeclarativeView::Error) {

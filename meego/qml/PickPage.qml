@@ -59,27 +59,27 @@ Page {
         header: PageHeader { title: page.title }
 
         delegate: ListItem {
-            contentHeight: page.detailOf(modelData) === "" ? Theme.itemSizeSmall
-                                                           : Theme.itemSizeMedium
+            contentHeight: page.detailOf(modelData) === "" ? AppTheme.itemSizeSmall
+                                                           : AppTheme.itemSizeMedium
 
             Column {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
 
                 Label {
                     text: page.labelOf(modelData)
                         + (modelData.current === true ? " — jetzt" : "")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: modelData.current === true ? Theme.highlightColor : Theme.primaryColor
+                    font.pixelSize: AppTheme.fontSizeSmall
+                    color: modelData.current === true ? AppTheme.highlightColor : AppTheme.primaryColor
                 }
 
                 Label {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: text.length > 0
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
+                    font.pixelSize: AppTheme.fontSizeExtraSmall
+                    color: AppTheme.secondaryColor
                     text: page.detailOf(modelData)
                 }
             }

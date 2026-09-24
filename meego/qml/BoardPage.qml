@@ -70,12 +70,12 @@ Page {
         anchors.fill: parent
         clip: true
         contentWidth: width
-        contentHeight: column.height + Theme.paddingLarge
+        contentHeight: column.height + AppTheme.paddingLarge
 
         Column {
             id: column
             width: page.width
-            spacing: Theme.paddingSmall
+            spacing: AppTheme.paddingSmall
 
             PageHeader {
                 title: engine.phaseText
@@ -92,16 +92,16 @@ Page {
 
             // --- Stand ----------------------------------------------------
             Row {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                spacing: Theme.paddingMedium
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
+                spacing: AppTheme.paddingMedium
 
                 Repeater {
                     model: engine.cures
                     delegate: Row {
-                        spacing: Theme.paddingSmall / 2
+                        spacing: AppTheme.paddingSmall / 2
                         Rectangle {
-                            width: Theme.fontSizeSmall
+                            width: AppTheme.fontSizeSmall
                             height: width
                             radius: modelData.cured ? width / 2 : 0
                             color: Style.colourOf(modelData.colour)
@@ -109,8 +109,8 @@ Page {
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Label {
-                            font.pixelSize: Theme.fontSizeExtraSmall
-                            color: Theme.secondaryColor
+                            font.pixelSize: AppTheme.fontSizeExtraSmall
+                            color: AppTheme.secondaryColor
                             text: modelData.supply
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -119,11 +119,11 @@ Page {
             }
 
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 wrapMode: Text.WordWrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
+                font.pixelSize: AppTheme.fontSizeExtraSmall
+                color: AppTheme.secondaryColor
                 text: "Rate " + engine.infectionRate + " · Ausbrüche " + engine.outbreaks
                     + "/8 · Stationen " + engine.stations + "/6 · Deck " + engine.playerDeck
                     + " · Infektionen " + engine.infectionDeck
@@ -141,7 +141,7 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 4 * Theme.horizontalPageMargin
+                width: parent.width - 4 * AppTheme.horizontalPageMargin
                 text: "Karte groß"
                 onClicked: pageStack.push(Qt.resolvedUrl("MapPage.qml"))
             }
@@ -153,9 +153,9 @@ Page {
             // Aktionen für ihre Stadt (dort steht dann auch der Direktflug),
             // eine Ereigniskarte die Ereignisseite.
             Flow {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                spacing: Theme.paddingSmall / 2
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
+                spacing: AppTheme.paddingSmall / 2
 
                 Repeater {
                     model: engine.players.length > 0 ? engine.players[engine.atTurn].hand : []
@@ -163,17 +163,17 @@ Page {
                     delegate: Rectangle {
                         id: card
                         property variant entry: modelData
-                        height: Theme.itemSizeExtraSmall * 0.5
-                        width: cardLabel.width + Theme.paddingMedium
+                        height: AppTheme.itemSizeExtraSmall * 0.5
+                        width: cardLabel.width + AppTheme.paddingMedium
                         radius: 4
                         color: entry.colour >= 0 ? Style.colourOf(entry.colour)
-                                                 : Theme.secondaryHighlightColor
+                                                 : AppTheme.secondaryHighlightColor
                         opacity: cardArea.pressed ? 0.6 : 1.0
 
                         Label {
                             id: cardLabel
                             anchors.centerIn: parent
-                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.pixelSize: AppTheme.fontSizeExtraSmall
                             color: "#101010"
                             text: card.entry.label
                         }
@@ -200,19 +200,19 @@ Page {
             // endgültig vorbei ist — wird hier gefragt, ob der Zug wirklich
             // vorbei sein soll.
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 visible: engine.awaitingTurnEnd
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.highlightColor
+                font.pixelSize: AppTheme.fontSizeSmall
+                color: AppTheme.highlightColor
                 text: "Zug beenden? Rückgängig geht noch."
             }
 
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: Theme.paddingMedium
+                spacing: AppTheme.paddingMedium
 
                 Button {
                     visible: engine.phase === "actions"
@@ -253,16 +253,16 @@ Page {
 
             // die letzten Zeilen des Protokolls, damit der Tisch mitkommt
             Column {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
 
                 Repeater {
                     model: engine.journal.slice(Math.max(0, engine.journal.length - 3))
                     delegate: Label {
                         width: parent.width
                         wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.fontSizeExtraSmall
-                        color: Theme.secondaryColor
+                        font.pixelSize: AppTheme.fontSizeExtraSmall
+                        color: AppTheme.secondaryColor
                         text: modelData
                     }
                 }

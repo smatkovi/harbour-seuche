@@ -21,20 +21,20 @@ Page {
         anchors.fill: parent
         clip: true
         contentWidth: width
-        contentHeight: column.height + Theme.paddingLarge
+        contentHeight: column.height + AppTheme.paddingLarge
 
         Column {
             id: column
             width: page.width
-            spacing: Theme.paddingMedium
+            spacing: AppTheme.paddingMedium
 
             PageHeader { title: "Über Seuche" }
 
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 wrapMode: Text.WordWrap
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: AppTheme.fontSizeSmall
                 text: "Kooperatives Seuchen-Brettspiel für 2 bis 4 Personen an einem Gerät.\n\n"
                     + "Ausgabe für MeeGo Harmattan (Nokia N9). Regelkern, Spiellogik und "
                     + "Netzwerkspiel sind dieselben wie in der Sailfish-Fassung; nur die "

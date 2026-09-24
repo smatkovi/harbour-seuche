@@ -24,12 +24,12 @@ Page {
         anchors.fill: parent
         clip: true
         contentWidth: width
-        contentHeight: column.height + Theme.paddingLarge
+        contentHeight: column.height + AppTheme.paddingLarge
 
         Column {
             id: column
             width: page.width
-            spacing: Theme.paddingSmall
+            spacing: AppTheme.paddingSmall
 
             PageHeader {
                 title: "Hände"
@@ -42,7 +42,7 @@ Page {
                 delegate: Column {
                     id: seatBlock
                     width: column.width
-                    spacing: Theme.paddingSmall / 2
+                    spacing: AppTheme.paddingSmall / 2
 
                     property variant player: modelData
                     property bool discarding: engine.discardingSeat === modelData.seat
@@ -60,9 +60,9 @@ Page {
                         // dieselbe Farbe wie die Figur auf dem Spielplan
                         Rectangle {
                             anchors.left: parent.left
-                            anchors.leftMargin: Theme.horizontalPageMargin
+                            anchors.leftMargin: AppTheme.horizontalPageMargin
                             anchors.verticalCenter: heading.verticalCenter
-                            width: Theme.fontSizeMedium
+                            width: AppTheme.fontSizeMedium
                             height: width
                             radius: width / 2
                             color: Style.roleColourOf(seatBlock.player.roleId)
@@ -72,11 +72,11 @@ Page {
                     }
 
                     Label {
-                        x: Theme.horizontalPageMargin
-                        width: parent.width - 2 * Theme.horizontalPageMargin
+                        x: AppTheme.horizontalPageMargin
+                        width: parent.width - 2 * AppTheme.horizontalPageMargin
                         wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.fontSizeExtraSmall
-                        color: Theme.secondaryColor
+                        font.pixelSize: AppTheme.fontSizeExtraSmall
+                        color: AppTheme.secondaryColor
                         text: seatBlock.player.cityName + " · " + seatBlock.player.ability
                             + (seatBlock.player.stored.length > 0
                                ? " · aufbewahrt: " + seatBlock.player.stored : "")
@@ -86,25 +86,25 @@ Page {
                         model: seatBlock.player.hand
 
                         delegate: ListItem {
-                            contentHeight: Theme.itemSizeExtraSmall
+                            contentHeight: AppTheme.itemSizeExtraSmall
                             enabled: seatBlock.discarding
 
                             Rectangle {
-                                x: Theme.horizontalPageMargin
+                                x: AppTheme.horizontalPageMargin
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: Theme.paddingSmall
+                                width: AppTheme.paddingSmall
                                 height: parent.height * 0.6
                                 color: modelData.colour >= 0 ? Style.colourOf(modelData.colour)
-                                                             : Theme.highlightColor
+                                                             : AppTheme.highlightColor
                             }
 
                             Label {
-                                x: Theme.horizontalPageMargin + Theme.paddingLarge
+                                x: AppTheme.horizontalPageMargin + AppTheme.paddingLarge
                                 anchors.verticalCenter: parent.verticalCenter
-                                font.pixelSize: Theme.fontSizeSmall
+                                font.pixelSize: AppTheme.fontSizeSmall
                                 text: modelData.label
-                                color: seatBlock.discarding ? Theme.primaryColor
-                                                            : Theme.secondaryColor
+                                color: seatBlock.discarding ? AppTheme.primaryColor
+                                                            : AppTheme.secondaryColor
                             }
 
                             onClicked: {

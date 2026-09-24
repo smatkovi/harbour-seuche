@@ -34,14 +34,14 @@ Page {
         }
 
         delegate: ListItem {
-            contentHeight: Theme.itemSizeSmall
+            contentHeight: AppTheme.itemSizeSmall
 
             Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
                 elide: Text.ElideRight
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: AppTheme.fontSizeSmall
                 text: modelData.label
             }
 

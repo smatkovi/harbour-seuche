@@ -32,10 +32,10 @@ Page {
     Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
-        anchors.margins: Theme.paddingMedium
-        width: status.width + Theme.paddingLarge
-        height: status.height + Theme.paddingMedium
-        radius: Theme.paddingSmall
+        anchors.margins: AppTheme.paddingMedium
+        width: status.width + AppTheme.paddingLarge
+        height: status.height + AppTheme.paddingMedium
+        radius: AppTheme.paddingSmall
         color: Qt.rgba(0, 0, 0, 0.55)
 
         Column {
@@ -43,12 +43,12 @@ Page {
             anchors.centerIn: parent
 
             Label {
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: AppTheme.fontSizeSmall
                 text: engine.phaseText
             }
             Label {
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
+                font.pixelSize: AppTheme.fontSizeExtraSmall
+                color: AppTheme.secondaryColor
                 text: "Rate " + engine.infectionRate + " · Ausbrüche " + engine.outbreaks
                     + "/8 · Deck " + engine.playerDeck
             }

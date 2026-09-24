@@ -64,22 +64,22 @@ Page {
         header: PageHeader { title: "Ereigniskarten" }
 
         delegate: ListItem {
-            contentHeight: Theme.itemSizeMedium
+            contentHeight: AppTheme.itemSizeMedium
 
             Column {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
+                x: AppTheme.horizontalPageMargin
+                width: parent.width - 2 * AppTheme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter
 
                 Label {
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: AppTheme.fontSizeSmall
                     text: modelData.name
                 }
                 Label {
                     width: parent.width
                     wrapMode: Text.WordWrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
+                    font.pixelSize: AppTheme.fontSizeExtraSmall
+                    color: AppTheme.secondaryColor
                     text: modelData.holder + " · " + modelData.text
                 }
             }

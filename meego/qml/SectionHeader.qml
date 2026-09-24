@@ -12,24 +12,24 @@ Item {
     property alias text: label.text
 
     width: parent ? parent.width : 0
-    height: label.height + 2 * Theme.paddingMedium
+    height: label.height + 2 * AppTheme.paddingMedium
 
     Label {
         id: label
         anchors.right: parent.right
-        anchors.rightMargin: Theme.horizontalPageMargin
+        anchors.rightMargin: AppTheme.horizontalPageMargin
         anchors.verticalCenter: parent.verticalCenter
-        font.pixelSize: Theme.fontSizeSmall
-        color: Theme.highlightColor
+        font.pixelSize: AppTheme.fontSizeSmall
+        color: AppTheme.highlightColor
     }
 
     Rectangle {
         anchors.left: parent.left
-        anchors.leftMargin: Theme.horizontalPageMargin
+        anchors.leftMargin: AppTheme.horizontalPageMargin
         anchors.right: label.left
-        anchors.rightMargin: Theme.paddingMedium
+        anchors.rightMargin: AppTheme.paddingMedium
         anchors.verticalCenter: label.verticalCenter
         height: 1
-        color: Theme.secondaryHighlightColor
+        color: AppTheme.secondaryHighlightColor
     }
 }

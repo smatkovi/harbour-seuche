@@ -12,10 +12,10 @@ Label {
     property bool enabled: false
 
     anchors.centerIn: parent
-    width: parent ? parent.width - 4 * Theme.horizontalPageMargin : 0
+    width: parent ? parent.width - 4 * AppTheme.horizontalPageMargin : 0
     horizontalAlignment: Text.AlignHCenter
     wrapMode: Text.WordWrap
     visible: enabled
-    font.pixelSize: Theme.fontSizeSmall
-    color: Theme.secondaryColor
+    font.pixelSize: AppTheme.fontSizeSmall
+    color: AppTheme.secondaryColor
 }
