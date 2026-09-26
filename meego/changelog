@@ -1,3 +1,12 @@
+harbour-seuche (0.7.0) unstable; urgency=low
+
+  * Mitspielen über Bluetooth, neben dem WLAN: wer einen Tisch eröffnet, macht
+    zugleich einen RFCOMM-Kanal auf, und in der Beitrittsliste stehen die
+    gekoppelten Geräte. Einmal in den Systemeinstellungen koppeln genügt,
+    ein Netz braucht es dann nicht mehr.
+
+ -- Sebastian Matkovich <sebastian.matkovich@gmail.com>  Sat, 26 Sep 2026 13:30:00 +0200
+
 harbour-seuche (0.6.1) unstable; urgency=low
 
   * Nach dem Verlassen des Netzes ist die eigene angefangene Partie sofort

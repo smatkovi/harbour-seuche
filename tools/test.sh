@@ -31,10 +31,12 @@ ssh "$HOST" "cd $DIR && \
 ssh "$HOST" "cd $DIR && \
     moc-qt5 src/SeucheEngine.h -o moc_SeucheEngine.cpp && \
     moc-qt5 src/net/LanSession.h -o moc_LanSession.cpp && \
-    FLAGS=\$(pkg-config --cflags --libs Qt5Core Qt5Gui Qt5Network Qt5Qml) && \
+    moc-qt5 src/net/BtLink.h -o moc_BtLink.cpp && \
+    FLAGS=\$(pkg-config --cflags --libs Qt5Core Qt5DBus Qt5Gui Qt5Network Qt5Qml) && \
     for t in test_qmlbridge test_lan test_save; do \
         g++ -std=c++17 -fPIC -O1 -Isrc -o \$t tests/\$t.cpp src/SeucheEngine.cpp \
-            src/core/*.cpp src/net/*.cpp moc_SeucheEngine.cpp moc_LanSession.cpp \$FLAGS && \
+            src/core/*.cpp src/net/*.cpp moc_SeucheEngine.cpp moc_LanSession.cpp \
+            moc_BtLink.cpp \$FLAGS && \
         QT_QPA_PLATFORM=minimal ./\$t || exit 1; \
     done"
 

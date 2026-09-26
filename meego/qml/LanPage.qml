@@ -149,6 +149,18 @@ Page {
                         + "Dieses Gerät: " + engine.browser.localAddresses
                 }
 
+                Label {
+                    x: AppTheme.horizontalPageMargin
+                    width: parent.width - 2 * AppTheme.horizontalPageMargin
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: AppTheme.fontSizeExtraSmall
+                    color: AppTheme.secondaryColor
+                    text: engine.bluetooth.available
+                          ? "Bluetooth ist ebenfalls offen: " + (engine.bluetooth.localName !== ""
+                                ? engine.bluetooth.localName : engine.bluetooth.localAddress)
+                          : "Bluetooth ist aus, es kommt nur wer im selben Netz ist"
+                }
+
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: parent.width - 4 * AppTheme.horizontalPageMargin
@@ -203,6 +215,58 @@ Page {
                         }
                     }
                 }
+
+                SectionHeader { text: "Über Bluetooth beitreten" }
+
+                Label {
+                    x: AppTheme.horizontalPageMargin
+                    width: parent.width - 2 * AppTheme.horizontalPageMargin
+                    visible: engine.bluetooth.devices.length === 0
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: AppTheme.fontSizeSmall
+                    color: AppTheme.secondaryColor
+                    text: engine.bluetooth.available
+                          ? "Keine gekoppelten Geräte. Koppelt die Geräte einmal in den "
+                            + "Systemeinstellungen, dann hier erneut suchen."
+                          : "Bluetooth ist ausgeschaltet."
+                }
+
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width - 4 * AppTheme.horizontalPageMargin
+                    text: "Gekoppelte Geräte"
+                    onClicked: engine.bluetooth.refresh()
+                }
+
+                Repeater {
+                    model: engine.bluetooth.devices
+
+                    delegate: ListItem {
+                        contentHeight: AppTheme.itemSizeSmall
+
+                        Column {
+                            x: AppTheme.horizontalPageMargin
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Label {
+                                font.pixelSize: AppTheme.fontSizeSmall
+                                text: modelData.name
+                            }
+                            Label {
+                                font.pixelSize: AppTheme.fontSizeExtraSmall
+                                color: AppTheme.secondaryColor
+                                text: modelData.address
+                            }
+                        }
+
+                        onClicked: {
+                            engine.joinBluetoothGame(modelData.address)
+                            page.leaving = true
+                        }
+                    }
+                }
+
+                SectionHeader { text: "Adresse eingeben" }
 
                 TextField {
                     id: manual

@@ -8,6 +8,12 @@ Categories=Game;
 X-Sailfish-ApplicationType=Silica
 
 [X-Sailjail]
-Permissions=Internet
+Permissions=Internet;Bluetooth
 OrganizationName=harbour-seuche
 ApplicationName=harbour-seuche
+# Bluetooth braucht AF_BLUETOOTH-Sockets, und der Seccomp-Filter von Sailjail
+# lässt nur die Protokolle zu, die seine Berechtigungen nennen (Base "unix",
+# Internet "inet,inet6,netlink") -- bluetooth nennt keine, im Käfig scheitert
+# also jeder RFCOMM-Socket mit "Operation not supported". Die Kennung oben
+# bleibt, an ihr hängt der Pfad der Einstellungen.
+Sandboxing=Disabled

@@ -7,16 +7,19 @@
 #include <QStringList>
 #include <QTcpServer>
 #include <QTimer>
+
+#include "BtLink.h"
 #include <QVariantList>
 #include <QVariantMap>
 
 class QTcpSocket;
 class QUdpSocket;
 
-// Transport for LAN matches, taken over from harbour-snapszer and given its own
-// ports and discovery words so the two games never answer each other's probes.
-// One device hosts (TCP server plus a UDP responder so other devices can find
-// it), the others join. Messages are compact JSON objects, one per line. The
+// Transport for matches between devices, taken over from harbour-snapszer and
+// given its own ports, RFCOMM channel and discovery words so the two games
+// never answer each other's probes. One device hosts (TCP server plus a UDP
+// responder so other devices can find it, and an RFCOMM channel for guests
+// that come over Bluetooth), the others join over whichever they like. Messages are compact JSON objects, one per line. The
 // session knows nothing about the game rules. A host accepts up to `maxPeers`
 // guests; a guest has exactly one peer, the host, with id 0.
 class LanSession : public QObject
@@ -38,9 +41,16 @@ public:
 
     // `players` is the table size shown to searching devices, `maxPeers` the
     // number of guests accepted.
+    // Bluetooth is opened alongside the LAN whenever the device has an
+    // adapter; a table is only refused when neither transport works.
     bool startHosting(const QString& hostName, int players, int maxPeers, QString* error);
     void setAcceptingGuests(bool accepting);
     void joinHost(const QString& address);
+    // Joins a host over Bluetooth. `address` is a device address, not an IP.
+    void joinBluetooth(const QString& address);
+    bool bluetoothHosting() const;
+    // Why the RFCOMM channel is not open, when hosting started without it.
+    QString bluetoothError() const { return m_btError; }
     void stop();
     void send(const QVariantMap& message);
     void sendTo(int peer, const QVariantMap& message);
@@ -63,12 +73,13 @@ signals:
 private:
     struct Peer {
         int id = -1;
-        QTcpSocket* socket = nullptr;
+        // A QTcpSocket or an RfcommSocket: both carry the same lines.
+        QIODevice* socket = nullptr;
         QByteArray buffer;
         qint64 lastSeen = 0;
     };
 
-    Peer* addPeer(QTcpSocket* socket);
+    Peer* addPeer(QIODevice* socket);
     Peer* findPeer(int id);
     void removePeer(int id, bool notify);
     void readPeer(int id);
@@ -76,7 +87,7 @@ private:
     // Which peer a socket belongs to. The per peer slots below recover it from
     // sender(), where the Qt 5 code captured it in a lambda.
     int peerIdOf(QObject* socket) const;
-    static void writeLine(QTcpSocket* socket, const QVariantMap& message);
+    static void writeLine(QIODevice* socket, const QVariantMap& message);
 
 // Qt 4 has no pointer-to-member connect(), so everything a signal reaches must
 // be a real slot named in a SIGNAL()/SLOT() string. Declaring them as slots
@@ -90,6 +101,9 @@ private slots:
     void onGuestSocketError();
     void onPeerReadyRead();
     void onPeerDisconnected();
+    void onBtConnection(RfcommSocket* socket);
+    void onBtConnected();
+    void onBtFailed(const QString& reason);
 
 private:
 
@@ -103,6 +117,9 @@ private:
     QList<Peer> m_peers;
     QUdpSocket* m_responder = nullptr;
     QTcpSocket* m_pendingSocket = nullptr;
+    RfcommServer* m_btServer = nullptr;
+    RfcommSocket* m_pendingBt = nullptr;
+    QString m_btError;
     QTimer m_pingTimer;
     QTimer m_connectTimer;
 };

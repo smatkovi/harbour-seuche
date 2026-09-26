@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Network Qml Quick)
+find_package(Qt5 REQUIRED COMPONENTS Core DBus Network Qml Quick)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SAILFISHAPP REQUIRED sailfishapp)
 
@@ -34,7 +34,7 @@ target_include_directories(harbour-seuche PRIVATE
 )
 
 target_link_libraries(harbour-seuche
-    Qt5::Core Qt5::Network Qt5::Qml Qt5::Quick ${SAILFISHAPP_LIBRARIES}
+    Qt5::Core Qt5::DBus Qt5::Network Qt5::Qml Qt5::Quick ${SAILFISHAPP_LIBRARIES}
 )
 
 # The QML is not compiled in: rpm/harbour-seuche.spec copies sailfish/*.qml and
@@ -55,7 +55,7 @@ if(SEUCHE_BUILD_TESTS)
     add_executable(test_qmlbridge tests/test_qmlbridge.cpp src/SeucheEngine.cpp
         ${SEUCHE_CORE_SOURCES} ${SEUCHE_NET_SOURCES})
     target_include_directories(test_qmlbridge PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(test_qmlbridge Qt5::Core Qt5::Gui Qt5::Network Qt5::Qml)
+    target_link_libraries(test_qmlbridge Qt5::Core Qt5::DBus Qt5::Gui Qt5::Network Qt5::Qml)
     add_test(NAME test_qmlbridge COMMAND test_qmlbridge)
 
     # A host and two guests in one process over the loopback, playing a whole
@@ -63,6 +63,6 @@ if(SEUCHE_BUILD_TESTS)
     add_executable(test_lan tests/test_lan.cpp src/SeucheEngine.cpp
         ${SEUCHE_CORE_SOURCES} ${SEUCHE_NET_SOURCES})
     target_include_directories(test_lan PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(test_lan Qt5::Core Qt5::Gui Qt5::Network Qt5::Qml)
+    target_link_libraries(test_lan Qt5::Core Qt5::DBus Qt5::Gui Qt5::Network Qt5::Qml)
     add_test(NAME test_lan COMMAND test_lan)
 endif()

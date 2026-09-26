@@ -1073,6 +1073,23 @@ void SeucheEngine::joinGame(const QString &address)
     emit changed();
 }
 
+void SeucheEngine::joinBluetoothGame(const QString &address)
+{
+    const QString device = Bt::normalizeAddress(address);
+    if (device.isEmpty()) {
+        setStatus(tr("Keine Bluetooth-Adresse"));
+        return;
+    }
+    session_.stop();
+    running_ = false;
+    local_ = false;
+    seatOwner_.clear();
+    mySeats_.clear();
+    session_.joinBluetooth(device);
+    setStatus(tr("Verbinde über Bluetooth mit %1 …").arg(device));
+    emit changed();
+}
+
 void SeucheEngine::leaveNetwork()
 {
     session_.stop();

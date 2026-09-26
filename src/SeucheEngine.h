@@ -73,6 +73,10 @@ class SeucheEngine : public QObject
     // really over: the fourth action is spent, no card has been drawn yet.
     Q_PROPERTY(bool awaitingTurnEnd READ awaitingTurnEnd NOTIFY changed)
     Q_PROPERTY(LanBrowser *browser READ browser CONSTANT)
+    // Die gekoppelten Bluetooth-Geräte und der Zustand des eigenen Funks.
+    Q_PROPERTY(BtDevices *bluetooth READ bluetooth CONSTANT)
+    Q_PROPERTY(bool bluetoothHosting READ bluetoothHosting NOTIFY netChanged)
+    Q_PROPERTY(QString bluetoothError READ bluetoothError NOTIFY netChanged)
     // Eine angefangene Partie liegt auf der Platte und ist beim Start wieder
     // da. Die Startseite braucht dafuer nichts Eigenes: `running` ist dann
     // schon wahr, und ihr Knopf "Laufende Partie fortsetzen" steht da.
@@ -149,11 +153,16 @@ public:
     // True when the seat that has to act right now belongs to this device.
     bool mayAct() const;
     LanBrowser *browser() { return &browser_; }
+    BtDevices *bluetooth() { return &bluetooth_; }
+    bool bluetoothHosting() const { return session_.bluetoothHosting(); }
+    QString bluetoothError() const { return session_.bluetoothError(); }
 
     // Starts a game and offers it on the network. `name` is what searching
     // devices see.
     Q_INVOKABLE bool hostGame(int seats, int difficulty, const QString &name);
     Q_INVOKABLE void joinGame(const QString &address);
+    // Dieselbe Runde, nur über Bluetooth: `address` ist eine Geräteadresse.
+    Q_INVOKABLE void joinBluetoothGame(const QString &address);
     Q_INVOKABLE void leaveNetwork();
     // Die gespeicherte Partie wegwerfen. Fuer den Fall, dass jemand lieber neu
     // anfaengt, ohne erst eine Partie zu Ende zu spielen.
@@ -247,6 +256,7 @@ private:
 
     LanSession session_;
     LanBrowser browser_;
+    BtDevices bluetooth_;
     QString netStatus_;
     std::vector<int> seatOwner_;   // per seat: peer id, -1 = this device
     std::vector<int> mySeats_;     // guest: the seats this device was given

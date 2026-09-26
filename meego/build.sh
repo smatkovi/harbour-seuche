@@ -25,9 +25,9 @@ mkdir -p "$OUT"
 
 # Der Regelkern ist reines C++17 und wird hier genauso gebaut wie für Sailfish.
 CORE_SRC=$(ls "$HERE"/src/core/*.cpp | tr '\n' ' ')
-APP_SRC="$HERE/src/SeucheEngine.cpp $HERE/src/net/LanSession.cpp $HERE/src/net/Snapshot.cpp"
+APP_SRC="$HERE/src/SeucheEngine.cpp $HERE/src/net/BtLink.cpp $HERE/src/net/LanSession.cpp $HERE/src/net/Snapshot.cpp"
 MEEGO_SRC="$HERE/meego/main.cpp $HERE/meego/src/LinkItem.cpp"
-MOC_HEADERS="$HERE/src/SeucheEngine.h $HERE/src/net/LanSession.h $HERE/meego/src/LinkItem.h $HERE/meego/src/Theme.h"
+MOC_HEADERS="$HERE/src/SeucheEngine.h $HERE/src/net/BtLink.h $HERE/src/net/LanSession.h $HERE/meego/src/LinkItem.h $HERE/meego/src/Theme.h"
 
 # -Wno-register: Qt 4.7 headers still use the keyword, which C++17 removed.
 # -Wno-nonnull: qobject_cast's Qt 4 type check dereferences a null pointer in
@@ -36,7 +36,7 @@ QT4_FLAGS="-std=gnu++17 -O2 -Wall -Wno-register -Wno-deprecated-declarations -Wn
  -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DQT_NO_DEBUG \
  -I$HERE/meego/compat -include $HERE/meego/compat/qt4compat.h \
  -I$HERE/src -I$HERE/meego/src -I$OUT"
-QT4_MODULES="QtCore QtGui QtNetwork QtScript QtDeclarative"
+QT4_MODULES="QtCore QtDBus QtGui QtNetwork QtScript QtDeclarative"
 
 case "$MODE" in
 arm)
@@ -52,7 +52,7 @@ arm)
     # des Geräts an seiner eigenen (GCC-4.4-)Laufzeit hängen bleibt.
     LDFLAGS="--sysroot=$SYSROOT -static-libstdc++ -static-libgcc -Wl,-O1 -Wl,--as-needed \
  -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
-    LIBS="-lQtDeclarative -lQtScript -lQtNetwork -lQtGui -lQtCore -lpthread"
+    LIBS="-lQtDeclarative -lQtScript -lQtNetwork -lQtDBus -lQtGui -lQtCore -lpthread"
     ;;
 x86)
     CXX=${CXX:-g++}
@@ -61,7 +61,7 @@ x86)
     CXXFLAGS="$QT4_FLAGS -I$QTINC"
     for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
     LDFLAGS="-L$SIMQT/lib -Wl,-rpath,$SIMQT/lib"
-    LIBS="-lQtDeclarative -lQtScript -lQtNetwork -lQtGui -lQtCore -lpthread"
+    LIBS="-lQtDeclarative -lQtScript -lQtNetwork -lQtDBus -lQtGui -lQtCore -lpthread"
     ;;
 check)
     # Nur der QML-Prüfer, ohne Kreuzübersetzer und ohne Bildschirm.
